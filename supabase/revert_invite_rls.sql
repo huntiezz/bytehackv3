@@ -11,6 +11,7 @@ DROP POLICY IF EXISTS "Admins can create invite codes" ON public.invite_codes;
 -- If you want NO RLS (dangerous but reverts "blocking"), you can disable it, but better to have a basic one.
 
 -- Basic policy: Authenticated users can read
+DROP POLICY IF EXISTS "Authenticated can read invite codes" ON public.invite_codes;
 CREATE POLICY "Authenticated can read invite codes"
 ON public.invite_codes
 FOR SELECT
@@ -18,6 +19,7 @@ TO authenticated
 USING (true);
 
 -- Policy: Only allow admins (checking the column you likely used before) to ALL
+DROP POLICY IF EXISTS "Admins full access basic" ON public.invite_codes;
 CREATE POLICY "Admins full access basic"
 ON public.invite_codes
 FOR ALL
