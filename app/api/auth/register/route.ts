@@ -28,10 +28,15 @@ export async function POST(req: Request) {
             .ilike("code", inputInviteCode)
             .limit(1);
 
+        if (codeError) {
+            console.error("Invite lookup error:", codeError);
+            return NextResponse.json({ error: "System error verifying invite code" }, { status: 500 });
+        }
+
         const codeData = codeDataArray?.[0];
 
-        if (codeError || !codeData) {
-            return NextResponse.json({ error: "Invalid invite code" }, { status: 400 });
+        if (!codeData) {
+            return NextResponse.json({ error: "Invalid invite code (Not found)" }, { status: 400 });
         }
 
         if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
@@ -87,6 +92,7 @@ export async function POST(req: Request) {
                 email: email,
                 display_name: username,
                 role: 'member',
+                is_admin: false,
                 avatar_url: randomPfp,
                 banner_url: randomBanner,
                 updated_at: new Date().toISOString()

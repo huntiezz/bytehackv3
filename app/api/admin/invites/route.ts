@@ -150,7 +150,7 @@ export async function PATCH(req: Request) {
         );
 
         const updates: any = {};
-        if (code !== undefined) updates.code = code;
+        if (code !== undefined) updates.code = code.toUpperCase();
         if (description !== undefined) updates.description = description;
         if (maxUses !== undefined) updates.max_uses = maxUses ? parseInt(maxUses) : null;
         if (expiresAt !== undefined) updates.expires_at = expiresAt;
