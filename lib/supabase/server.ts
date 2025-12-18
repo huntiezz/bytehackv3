@@ -23,6 +23,9 @@ export async function createClient() {
       },
       cookieOptions: {
         name: 'bytehack-auth',
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
       },
     }
   )
