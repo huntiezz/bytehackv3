@@ -23,13 +23,15 @@ export async function POST(req: Request) {
 
         console.log(`Checking invite code: '${inputInviteCode}'`);
 
-        const { data: codeData, error: codeError } = await supabaseAdmin
+        const { data: codeDataArray, error: codeError } = await supabaseAdmin
             .from("invite_codes")
             .select("*")
             .eq("code", inputInviteCode)
-            .single();
+            .limit(1);
 
-        console.log("Invite code lookup result:", { data: codeData, error: codeError ? codeError.message : null });
+        const codeData = codeDataArray?.[0];
+
+        // console.log("Invite code lookup result:", { data: codeData, error: codeError ? codeError.message : null });
 
         if (codeError || !codeData) {
             console.log(`Invite code lookup failed for: "${inputInviteCode}". Found: ${!!codeData}, Error: ${codeError?.message}`);
