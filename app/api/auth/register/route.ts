@@ -35,6 +35,16 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Invite code max uses reached" }, { status: 400 });
         }
 
+        const { data: existingUser } = await supabaseAdmin
+            .from("profiles")
+            .select("username")
+            .eq("username", username.toLowerCase().replace(/\s+/g, '_'))
+            .single();
+
+        if (existingUser) {
+            return NextResponse.json({ error: "Username already taken" }, { status: 400 });
+        }
+
         const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password,
@@ -84,27 +94,20 @@ export async function POST(req: Request) {
 
         const { error: profileError } = await supabaseAdmin
             .from("profiles")
-            .update({
+            .upsert({
+                id: userData.user.id,
                 username: username.toLowerCase().replace(/\s+/g, '_'),
                 name: username,
                 display_name: username,
+                role: 'member',
                 avatar_url: randomPfp,
                 banner_url: randomBanner
-            })
-            .eq("id", userData.user.id);
+            }, {
+                onConflict: 'id'
+            });
 
         if (profileError) {
-            await supabaseAdmin
-                .from("profiles")
-                .insert({
-                    id: userData.user.id,
-                    username: username.toLowerCase().replace(/\s+/g, '_'),
-                    name: username,
-                    display_name: username,
-                    role: 'member',
-                    avatar_url: randomPfp,
-                    banner_url: randomBanner
-                });
+            console.error("Profile creation error:", profileError);
         }
 
         return NextResponse.json({ success: true, message: "Account created successfully" });
