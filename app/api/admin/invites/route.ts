@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -10,15 +10,14 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const supabase0 = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        );
-        const supabase = supabase0;
+        const supabase = await createClient();
 
         const { data: codes, error } = await supabase
             .from("invite_codes")
-            .select("*")
+            .select(`
+                *,
+                creator:profiles!created_by(username, display_name)
+            `)
             .order("created_at", { ascending: false });
 
         if (error) {
@@ -64,12 +63,9 @@ export async function POST(req: Request) {
             ? customCode.trim().toUpperCase()
             : 'INV-' + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-        const supabaseAdmin = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        );
+        const supabase = await createClient();
 
-        const { data, error } = await supabaseAdmin
+        const { data, error } = await supabase
             .from("invite_codes")
             .insert({
                 code,
@@ -108,11 +104,7 @@ export async function DELETE(req: Request) {
             return NextResponse.json({ error: "Code required" }, { status: 400 });
         }
 
-        const supabase0 = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        );
-        const supabase = supabase0;
+        const supabase = await createClient();
 
         const { error } = await supabase
             .from("invite_codes")
@@ -145,10 +137,7 @@ export async function PATCH(req: Request) {
             return NextResponse.json({ error: "ID required" }, { status: 400 });
         }
 
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        );
+        const supabase = await createClient();
 
         const updates: any = {};
         if (code !== undefined) updates.code = code;
