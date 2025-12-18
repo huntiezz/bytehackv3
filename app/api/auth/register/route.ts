@@ -77,17 +77,23 @@ export async function POST(req: Request) {
 
         await new Promise(resolve => setTimeout(resolve, 500));
 
+        const pfps = ["/pfp.png", "/pfp2.png", "/pfp3.png", "/pfp4.png"];
+        const banners = ["/banner.gif", "/banner2.gif", "/banner3.jpg"];
+        const randomPfp = pfps[Math.floor(Math.random() * pfps.length)];
+        const randomBanner = banners[Math.floor(Math.random() * banners.length)];
+
         const { error: profileError } = await supabaseAdmin
             .from("profiles")
             .update({
                 username: username.toLowerCase().replace(/\s+/g, '_'),
                 name: username,
-                display_name: username
+                display_name: username,
+                avatar_url: randomPfp,
+                banner_url: randomBanner
             })
             .eq("id", userData.user.id);
 
         if (profileError) {
-
             await supabaseAdmin
                 .from("profiles")
                 .insert({
@@ -95,7 +101,9 @@ export async function POST(req: Request) {
                     username: username.toLowerCase().replace(/\s+/g, '_'),
                     name: username,
                     display_name: username,
-                    role: 'member'
+                    role: 'member',
+                    avatar_url: randomPfp,
+                    banner_url: randomBanner
                 });
         }
 
