@@ -21,7 +21,6 @@ export async function POST(req: Request) {
             process.env.SUPABASE_SERVICE_ROLE_KEY
         );
 
-        console.log(`Checking invite code: '${inputInviteCode}'`);
 
         const { data: codeDataArray, error: codeError } = await supabaseAdmin
             .from("invite_codes")
@@ -31,16 +30,8 @@ export async function POST(req: Request) {
 
         const codeData = codeDataArray?.[0];
 
-        // console.log("Invite code lookup result:", { data: codeData, error: codeError ? codeError.message : null });
-
         if (codeError || !codeData) {
-            console.log(`Invite code lookup failed for: "${inputInviteCode}". Found: ${!!codeData}, Error: ${codeError?.message}`);
-            // Debug info to help user verify environment
-            const maskedUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/^(https:\/\/)([^.]+)(.+)$/, '$1$2***');
-
-            return NextResponse.json({
-                error: `Invalid invite code. Searched for: '${inputInviteCode}'. Database Connection: ${maskedUrl}. Reason: ${codeError?.message || "Code not found in 'invite_codes' table"}`
-            }, { status: 400 });
+            return NextResponse.json({ error: "Invalid invite code" }, { status: 400 });
         }
 
         if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
@@ -114,8 +105,6 @@ export async function POST(req: Request) {
                 error: `Profile creation failed: ${profileError.message || JSON.stringify(profileError)}`
             }, { status: 500 });
         }
-
-        // --- SUCCESS PATH ---
 
         // --- SUCCESS PATH ---
 
