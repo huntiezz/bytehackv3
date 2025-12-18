@@ -50,9 +50,7 @@ export async function POST(req: Request) {
             password,
             email_confirm: true,
             user_metadata: {
-                name: username,
-                username: username.toLowerCase(),
-                role: 'member'
+                username: username.toLowerCase().replace(/\s+/g, '_'),
             }
         });
 
@@ -98,6 +96,7 @@ export async function POST(req: Request) {
                 id: userData.user.id,
                 username: username.toLowerCase().replace(/\s+/g, '_'),
                 name: username,
+                email: email, // Add email to profile
                 display_name: username,
                 role: 'member',
                 avatar_url: randomPfp,
