@@ -6,7 +6,7 @@ export function createClient() {
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
   const clientUrl = process.env.NODE_ENV === 'production'
-    ? '/api/supabase'
+    ? `${typeof window !== 'undefined' ? window.location.origin : baseUrl}/api/supabase`
     : supabaseUrl;
 
   return createBrowserClient(
