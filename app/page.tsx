@@ -36,7 +36,7 @@ export default async function LandingPage() {
 
         <div className="max-w-4xl mx-auto relative text-center space-y-8">
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
-            The Underground. <br />
+            The Underground.t <br />
             <span className="text-primary">Development Community</span>
           </h1>
 
