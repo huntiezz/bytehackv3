@@ -35,8 +35,11 @@ export async function POST(req: Request) {
 
         if (codeError || !codeData) {
             console.log(`Invite code lookup failed for: "${inputInviteCode}". Found: ${!!codeData}, Error: ${codeError?.message}`);
+            // Debug info to help user verify environment
+            const maskedUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/^(https:\/\/)([^.]+)(.+)$/, '$1$2***');
+
             return NextResponse.json({
-                error: `Invalid invite code: ${codeError?.message || "Code not found"}`
+                error: `Invalid invite code. Searched for: '${inputInviteCode}'. Database Connection: ${maskedUrl}. Reason: ${codeError?.message || "Code not found in 'invite_codes' table"}`
             }, { status: 400 });
         }
 
