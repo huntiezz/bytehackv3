@@ -49,9 +49,18 @@ async function handleProxy(req: NextRequest) {
             duplex: body ? 'half' : undefined,
         });
 
-        const responseHeaders = new Headers(res.headers);
-
-        responseHeaders.delete('access-control-allow-origin');
+        const responseHeaders = new Headers();
+        res.headers.forEach((value, key) => {
+            if (key.toLowerCase() === 'set-cookie') {
+                const cookies = res.headers.getSetCookie();
+                cookies.forEach(cookie => {
+                    const cleanCookie = cookie.replace(/Domain=[^;]+;?/, '');
+                    responseHeaders.append('Set-Cookie', cleanCookie);
+                });
+            } else if (key.toLowerCase() !== 'access-control-allow-origin') {
+                responseHeaders.set(key, value);
+            }
+        });
 
         return new NextResponse(res.body, {
             status: res.status,
