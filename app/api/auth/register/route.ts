@@ -11,9 +11,14 @@ export async function POST(req: Request) {
 
         const inputInviteCode = inviteCode?.trim().toUpperCase();
 
+        if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+            console.error("SUPABASE_SERVICE_ROLE_KEY is missing. Registration cannot proceed.");
+            return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+        }
+
         const supabaseAdmin = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            process.env.SUPABASE_SERVICE_ROLE_KEY
         );
 
         const { data: codeData, error: codeError } = await supabaseAdmin
@@ -62,6 +67,43 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
         }
 
+        // --- ATOMIC PROFILE CREATION ---
+
+        await new Promise(resolve => setTimeout(resolve, 500)); // Small delay to allow triggers/auth content to settle
+
+        const pfps = ["/pfp.png", "/pfp2.png", "/pfp3.png", "/pfp4.png"];
+        const banners = ["/banner.gif", "/banner2.gif", "/banner3.jpg"];
+        const randomPfp = pfps[Math.floor(Math.random() * pfps.length)];
+        const randomBanner = banners[Math.floor(Math.random() * banners.length)];
+
+        const { error: profileError } = await supabaseAdmin
+            .from("profiles")
+            .upsert({
+                id: userData.user.id,
+                username: username.toLowerCase().replace(/\s+/g, '_'),
+                name: username,
+                email: email,
+                display_name: username,
+                role: 'member',
+                avatar_url: randomPfp,
+                banner_url: randomBanner,
+                updated_at: new Date().toISOString()
+            }, {
+                onConflict: 'id'
+            });
+
+        if (profileError) {
+            console.error("CRITICAL: Profile creation failed for user", userData.user.id, profileError);
+
+            // Attempt Rollback
+            const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userData.user.id);
+            if (deleteError) console.error("CRITICAL: Failed to rollback (delete) auth user:", deleteError);
+
+            return NextResponse.json({ error: "Failed to create profile. Please try again." }, { status: 500 });
+        }
+
+        // --- SUCCESS PATH ---
+
         const { error: updateError } = await supabaseAdmin
             .from("invite_codes")
             .update({ uses: codeData.uses + 1 })
@@ -80,33 +122,6 @@ export async function POST(req: Request) {
 
         if (redemptionError) {
             console.error("Failed to record redemption:", redemptionError);
-        }
-
-
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const pfps = ["/pfp.png", "/pfp2.png", "/pfp3.png", "/pfp4.png"];
-        const banners = ["/banner.gif", "/banner2.gif", "/banner3.jpg"];
-        const randomPfp = pfps[Math.floor(Math.random() * pfps.length)];
-        const randomBanner = banners[Math.floor(Math.random() * banners.length)];
-
-        const { error: profileError } = await supabaseAdmin
-            .from("profiles")
-            .upsert({
-                id: userData.user.id,
-                username: username.toLowerCase().replace(/\s+/g, '_'),
-                name: username,
-                email: email, // Add email to profile
-                display_name: username,
-                role: 'member',
-                avatar_url: randomPfp,
-                banner_url: randomBanner
-            }, {
-                onConflict: 'id'
-            });
-
-        if (profileError) {
-            console.error("Profile creation error:", profileError);
         }
 
         return NextResponse.json({ success: true, message: "Account created successfully" });
