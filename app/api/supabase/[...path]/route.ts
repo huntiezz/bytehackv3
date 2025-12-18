@@ -29,23 +29,30 @@ async function handleProxy(req: NextRequest) {
 
     const headers = new Headers(req.headers);
 
+    // Set the host to match the target
     headers.set('host', new URL(supabaseUrl).host);
 
-    headers.delete('x-forwarded-for');
-    headers.delete('x-forwarded-host');
-    headers.delete('x-forwarded-proto');
+    // Keep the forwarded headers if they exist, or set them
+    const forwardedFor = req.headers.get('x-forwarded-for');
+    if (forwardedFor) {
+        headers.set('x-forwarded-for', forwardedFor);
+    }
 
     try {
         const body = req.method !== 'GET' && req.method !== 'HEAD'
-            ? await req.blob()
+            ? await req.arrayBuffer()
             : undefined;
+
+        // When sending a body with fetch, the content-length will be set automatically
+        // Deleting it from the cloned headers avoids conflicts
+        headers.delete('content-length');
 
         const res = await fetch(url, {
             method: req.method,
             headers: headers,
             body: body,
             cache: 'no-store',
-            // @ts-ignore - duplex is required for streaming body in fetch but not recognized by all types
+            // @ts-ignore
             duplex: body ? 'half' : undefined,
         });
 
@@ -57,7 +64,7 @@ async function handleProxy(req: NextRequest) {
                     const cleanCookie = cookie.replace(/Domain=[^;]+;?/, '');
                     responseHeaders.append('Set-Cookie', cleanCookie);
                 });
-            } else if (key.toLowerCase() !== 'access-control-allow-origin') {
+            } else if (key.toLowerCase() !== 'access-control-allow-origin' && key.toLowerCase() !== 'content-encoding') {
                 responseHeaders.set(key, value);
             }
         });
