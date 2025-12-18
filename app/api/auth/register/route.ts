@@ -114,24 +114,25 @@ export async function POST(req: Request) {
 
         // --- SUCCESS PATH ---
 
-        const { error: updateError } = await supabaseAdmin
+        // --- SUCCESS PATH ---
+
+        // Simple update to decrement uses. Redemption tracking can be done via triggers or logs if strictly needed,
+        // but for now we prioritize successful registration.
+        await supabaseAdmin
             .from("invite_codes")
             .update({ uses: codeData.uses + 1 })
             .eq("id", codeData.id);
 
-        if (updateError) {
-            console.error("Failed to increment invite code usage:", updateError);
-        }
-
-        const { error: redemptionError } = await supabaseAdmin
-            .from("invite_code_redemptions")
-            .insert({
-                invite_code_id: codeData.id,
-                user_id: userData.user.id
-            });
-
-        if (redemptionError) {
-            console.error("Failed to record redemption:", redemptionError);
+        // Optional: track redemption
+        try {
+            await supabaseAdmin
+                .from("invite_code_redemptions")
+                .insert({
+                    invite_code_id: codeData.id,
+                    user_id: userData.user.id
+                });
+        } catch (e) {
+            console.error("Redemption log failed (non-critical):", e);
         }
 
         return NextResponse.json({ success: true, message: "Account created successfully" });
