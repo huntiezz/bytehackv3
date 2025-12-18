@@ -53,9 +53,32 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
             if (!res.ok) {
                 toast.error(data.error || "Registration failed");
             } else {
-                success = true;
-                toast.success("Account created! Redirecting...");
-                setTimeout(() => router.push("/login"), 1500);
+                toast.success("Account created! Logging in...");
+
+                // Auto-login
+                try {
+                    const loginRes = await fetch("/api/auth/login", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            email: formData.email,
+                            password: formData.password
+                        })
+                    });
+
+                    if (loginRes.ok) {
+                        success = true;
+                        toast.success("Welcome to ByteHack!");
+                        router.push("/forum");
+                        router.refresh();
+                    } else {
+                        // Fallback to login page if auto-login fails
+                        setTimeout(() => router.push("/login"), 1000);
+                    }
+                } catch (loginErr) {
+                    console.error("Auto-login failed:", loginErr);
+                    setTimeout(() => router.push("/login"), 1000);
+                }
             }
         } catch (error: any) {
             toast.error(error.message || "Error creating account");
