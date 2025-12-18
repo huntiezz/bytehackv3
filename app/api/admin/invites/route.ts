@@ -14,10 +14,7 @@ export async function GET(req: Request) {
 
         const { data: codes, error } = await supabase
             .from("invite_codes")
-            .select(`
-                *,
-                creator:profiles!created_by(username, display_name)
-            `)
+            .select("*")
             .order("created_at", { ascending: false });
 
         if (error) {
