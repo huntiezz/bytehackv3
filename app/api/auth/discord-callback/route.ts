@@ -128,7 +128,7 @@ export async function GET(request: Request) {
                 maxAge: 60 * 60 * 24 * 7,
                 path: '/',
             });
-
+ 
             return response;
         } else {
             return NextResponse.redirect(new URL("/?error=not_admin", baseUrl));
