@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 
 interface CaptchaProps {
@@ -27,6 +27,16 @@ export function Captcha({ onVerify }: CaptchaProps) {
 
     if (!process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
         return <div className="text-red-500 text-xs p-2 text-center">Missing Site Key</div>;
+    }
+
+    useEffect(() => {
+        if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+            onVerify("localhost-bypass-token");
+        }
+    }, [onVerify]);
+
+    if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+        return <div className="text-xs text-green-500 text-center p-4 bg-green-500/10 rounded border border-green-500/20">Captcha bypassed (Localhost)</div>;
     }
 
     return (

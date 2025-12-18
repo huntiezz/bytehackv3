@@ -264,7 +264,7 @@ export function InviteCodesManager() {
                                     placeholder="BETA-ACCESS-2026"
                                     className="bg-[#050505] border-white/10 text-white placeholder:text-white/20 text-xs h-10 font-mono"
                                     value={customCode}
-                                    onChange={(e) => setCustomCode(e.target.value)}
+                                    onChange={(e) => setCustomCode(e.target.value.toUpperCase())}
                                 />
                             </div>
                             <div className="col-span-1 space-y-2">

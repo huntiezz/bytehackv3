@@ -11,6 +11,11 @@ export function createClient() {
 
   return createBrowserClient(
     clientUrl,
-    supabaseKey
+    supabaseKey,
+    {
+      cookieOptions: {
+        name: 'bytehack-auth',
+      }
+    }
   )
 }

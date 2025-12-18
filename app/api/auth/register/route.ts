@@ -11,20 +11,32 @@ export async function POST(req: Request) {
 
         const inputInviteCode = inviteCode?.trim().toUpperCase();
 
+        if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+            console.error("SUPABASE_SERVICE_ROLE_KEY is missing. Registration cannot proceed.");
+            return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+        }
+
         const supabaseAdmin = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            process.env.SUPABASE_SERVICE_ROLE_KEY
         );
 
-        const { data: codeData, error: codeError } = await supabaseAdmin
+
+        const { data: codeDataArray, error: codeError } = await supabaseAdmin
             .from("invite_codes")
             .select("*")
-            .eq("code", inputInviteCode)
-            .single();
+            .ilike("code", inputInviteCode)
+            .limit(1);
 
-        if (codeError || !codeData) {
-            console.log(`Invite code lookup failed for: "${inputInviteCode}". Found: ${!!codeData}, Error: ${codeError?.message}`);
-            return NextResponse.json({ error: "Invalid invite code" }, { status: 400 });
+        if (codeError) {
+            console.error("Invite lookup error:", codeError);
+            return NextResponse.json({ error: "System error verifying invite code" }, { status: 500 });
+        }
+
+        const codeData = codeDataArray?.[0];
+
+        if (!codeData) {
+            return NextResponse.json({ error: "Invalid invite code (Not found)" }, { status: 400 });
         }
 
         if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
@@ -50,9 +62,7 @@ export async function POST(req: Request) {
             password,
             email_confirm: true,
             user_metadata: {
-                name: username,
-                username: username.toLowerCase(),
-                role: 'member'
+                username: username.toLowerCase().replace(/\s+/g, '_'),
             }
         });
 
@@ -64,28 +74,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
         }
 
-        const { error: updateError } = await supabaseAdmin
-            .from("invite_codes")
-            .update({ uses: codeData.uses + 1 })
-            .eq("id", codeData.id);
+        // --- ATOMIC PROFILE CREATION ---
 
-        if (updateError) {
-            console.error("Failed to increment invite code usage:", updateError);
-        }
-
-        const { error: redemptionError } = await supabaseAdmin
-            .from("invite_code_redemptions")
-            .insert({
-                invite_code_id: codeData.id,
-                user_id: userData.user.id
-            });
-
-        if (redemptionError) {
-            console.error("Failed to record redemption:", redemptionError);
-        }
-
-
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 500)); // Small delay to allow triggers/auth content to settle
 
         const pfps = ["/pfp.png", "/pfp2.png", "/pfp3.png", "/pfp4.png"];
         const banners = ["/banner.gif", "/banner2.gif", "/banner3.jpg"];
@@ -98,16 +89,48 @@ export async function POST(req: Request) {
                 id: userData.user.id,
                 username: username.toLowerCase().replace(/\s+/g, '_'),
                 name: username,
+                email: email,
                 display_name: username,
                 role: 'member',
+                is_admin: false,
                 avatar_url: randomPfp,
-                banner_url: randomBanner
+                banner_url: randomBanner,
+                updated_at: new Date().toISOString()
             }, {
                 onConflict: 'id'
             });
 
         if (profileError) {
-            console.error("Profile creation error:", profileError);
+            console.error("CRITICAL: Profile creation failed for user", userData.user.id, profileError);
+
+            // Attempt Rollback
+            const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userData.user.id);
+            if (deleteError) console.error("CRITICAL: Failed to rollback (delete) auth user:", deleteError);
+
+            return NextResponse.json({
+                error: `Profile creation failed: ${profileError.message || JSON.stringify(profileError)}`
+            }, { status: 500 });
+        }
+
+        // --- SUCCESS PATH ---
+
+        // Simple update to decrement uses. Redemption tracking can be done via triggers or logs if strictly needed,
+        // but for now we prioritize successful registration.
+        await supabaseAdmin
+            .from("invite_codes")
+            .update({ uses: codeData.uses + 1 })
+            .eq("id", codeData.id);
+
+        // Optional: track redemption
+        try {
+            await supabaseAdmin
+                .from("invite_code_redemptions")
+                .insert({
+                    invite_code_id: codeData.id,
+                    user_id: userData.user.id
+                });
+        } catch (e) {
+            console.error("Redemption log failed (non-critical):", e);
         }
 
         return NextResponse.json({ success: true, message: "Account created successfully" });

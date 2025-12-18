@@ -69,19 +69,22 @@ export function LoginForm({
                 throw new Error("Invalid CAPTCHA");
             }
 
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
+            const loginRes = await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
             });
 
-            if (error) {
-                toast.error(error.message);
-            } else {
-                success = true;
-                toast.success("Welcome back!");
-                router.push("/forum");
-                router.refresh();
+            const loginData = await loginRes.json();
+
+            if (!loginRes.ok) {
+                throw new Error(loginData.error || "Login failed");
             }
+
+            success = true;
+            toast.success("Welcome back!");
+            router.push("/forum");
+            router.refresh();
         } catch (error: any) {
             toast.error(error.message || "Something went wrong");
         } finally {
