@@ -21,11 +21,15 @@ export async function POST(req: Request) {
             process.env.SUPABASE_SERVICE_ROLE_KEY
         );
 
+        console.log(`Checking invite code: '${inputInviteCode}'`);
+
         const { data: codeData, error: codeError } = await supabaseAdmin
             .from("invite_codes")
             .select("*")
             .eq("code", inputInviteCode)
             .single();
+
+        console.log("Invite code lookup result:", { data: codeData, error: codeError ? codeError.message : null });
 
         if (codeError || !codeData) {
             console.log(`Invite code lookup failed for: "${inputInviteCode}". Found: ${!!codeData}, Error: ${codeError?.message}`);
