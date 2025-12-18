@@ -26,7 +26,10 @@ export default async function ForumPage({
   const { getUserAllowedCategories } = await import("@/lib/forum-permissions");
 
   if (!user) {
+    console.log("ForumPage: No user found. Redirecting to login.");
     redirect('/login');
+  } else {
+    console.log("ForumPage: User found:", user.id);
   }
 
   const allowedCats = await getUserAllowedCategories(user.id);

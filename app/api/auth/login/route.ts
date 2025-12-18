@@ -39,8 +39,12 @@ export async function POST(request: Request) {
         });
 
         if (error) {
+            console.error("Login API: Supabase auth error:", error.message);
             return NextResponse.json({ error: error.message }, { status: 401 });
         }
+
+        console.log("Login API: Login successful for", email);
+        console.log("Login API: Session Data present:", !!data.session);
 
         return response;
     } catch (error) {

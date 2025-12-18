@@ -32,6 +32,7 @@ export const getCurrentUser = cache(async () => {
   const { data: { user: authUser } } = await supabase.auth.getUser();
 
   if (!authUser) {
+    console.log("getCurrentUser: No auth user found from Supabase");
     return null;
   }
 
