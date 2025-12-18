@@ -99,7 +99,9 @@ export async function POST(req: Request) {
             const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userData.user.id);
             if (deleteError) console.error("CRITICAL: Failed to rollback (delete) auth user:", deleteError);
 
-            return NextResponse.json({ error: "Failed to create profile. Please try again." }, { status: 500 });
+            return NextResponse.json({
+                error: `Profile creation failed: ${profileError.message || JSON.stringify(profileError)}`
+            }, { status: 500 });
         }
 
         // --- SUCCESS PATH ---
