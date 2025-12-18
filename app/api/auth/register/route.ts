@@ -26,7 +26,7 @@ export async function POST(req: Request) {
         const { data: codeDataArray, error: codeError } = await supabaseAdmin
             .from("invite_codes")
             .select("*")
-            .eq("code", inputInviteCode)
+            .ilike("code", inputInviteCode)
             .limit(1);
 
         const codeData = codeDataArray?.[0];
