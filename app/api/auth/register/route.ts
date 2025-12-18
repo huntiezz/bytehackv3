@@ -29,7 +29,9 @@ export async function POST(req: Request) {
 
         if (codeError || !codeData) {
             console.log(`Invite code lookup failed for: "${inputInviteCode}". Found: ${!!codeData}, Error: ${codeError?.message}`);
-            return NextResponse.json({ error: "Invalid invite code" }, { status: 400 });
+            return NextResponse.json({
+                error: `Invalid invite code: ${codeError?.message || "Code not found"}`
+            }, { status: 400 });
         }
 
         if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
