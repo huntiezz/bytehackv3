@@ -21,6 +21,9 @@ export async function createClient() {
           }
         },
       },
+      cookieOptions: {
+        name: 'bytehack-auth',
+      },
     }
   )
 }
