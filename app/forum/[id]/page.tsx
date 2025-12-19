@@ -145,7 +145,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     .from("threads")
     .select(`
       *,
-      author:profiles(display_name, username)
+      author:profiles!threads_author_id_fkey(display_name, username)
     `)
     .eq("id", id)
     .single();

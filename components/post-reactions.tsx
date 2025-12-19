@@ -87,13 +87,13 @@ export function PostReactions({ postId, initialReactions, currentUserId, current
                     <button
                         onClick={() => handleToggle(emoji)}
                         className={cn(
-                            "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all border",
+                            "flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-sm font-medium transition-all border shrink-0 min-w-[3rem]",
                             hasReacted
                                 ? "bg-blue-500/10 border-blue-500/50 text-blue-400"
                                 : "bg-[#0A0A0A] border-white/5 text-zinc-400 hover:bg-white/5 hover:text-white"
                         )}
                     >
-                        <span>{emoji}</span>
+                        <span className="leading-none">{emoji}</span>
                         <span className={cn("text-xs", hasReacted ? "text-blue-400" : "text-zinc-500")}>{count}</span>
                     </button>
 

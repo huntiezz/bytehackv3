@@ -11,7 +11,14 @@ export async function toggleReaction(postId: string, emoji: string) {
     if (!user) {
         return { error: 'You must be logged in to react' } // this should never happen though cause you need to be signed in to view the skibidi ahh forum 
     }
-    const isEmoji = /^(\p{Emoji_Presentation}|\p{Extended_Pictographic})+$/u.test(emoji);
+    // Strict emoji validation: must be a single emoji character (including composite ones)
+    // and definitely NOT just text letters/numbers.
+    const isEmoji = /^(\p{Emoji_Presentation}|\p{Extended_Pictographic})$/u.test(emoji);
+
+    // Explicit check against common ASCII characters to be sure
+    if (/^[a-zA-Z0-9]$/.test(emoji)) {
+        return { error: 'Invalid emoji' }
+    }
     if (!isEmoji || emoji.length > 5) {
         return { error: 'Invalid emoji' }
     }
