@@ -7,8 +7,10 @@ import { rateLimit } from "@/lib/rate-limit";
 export async function POST(req: Request) {
   try {
     const admin = await getCurrentUser();
+    console.log("BanUser API Check - Admin:", admin ? { id: admin.id, role: admin.role, is_admin: admin.is_admin } : "null");
 
-    if (!admin || admin.role !== 'admin') {
+    if (!admin || (admin.role !== 'admin' && !admin.is_admin)) {
+      console.log("BanUser API - Unauthorized");
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -64,7 +66,7 @@ export async function DELETE(req: Request) {
   try {
     const admin = await getCurrentUser();
 
-    if (!admin || admin.role !== 'admin') {
+    if (!admin || (admin.role !== 'admin' && !admin.is_admin)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -90,6 +92,13 @@ export async function DELETE(req: Request) {
       .update({ is_active: false })
       .eq("user_id", userId)
       .eq("is_active", true);
+
+    if (!banError) {
+      await supabase
+        .from("profiles")
+        .update({ is_banned: false })
+        .eq("id", userId);
+    }
 
     if (banError) {
       console.error("Error unbanning user:", banError);

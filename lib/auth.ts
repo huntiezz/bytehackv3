@@ -3,26 +3,35 @@ import { createClient } from "@/lib/supabase/server";
 import { cache } from "react";
 import { checkUserBan } from "./check-ban";
 
+import { createHmac } from "crypto";
+
 export const getCurrentUser = cache(async () => {
   const cookieStore = await cookies();
-
-
   const supabase = await createClient();
+
   const { data: { user: authUser } } = await supabase.auth.getUser();
 
-  if (!authUser) {
-    console.log("getCurrentUser: No auth user found from Supabase");
-    return null;
+  if (authUser) {
+    const { data: user } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", authUser.id)
+      .single();
+
+    // Check if user is banned
+    if (user && user.is_banned) {
+      return null;
+    }
+
+    return user;
   }
 
-  const { data: user } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("id", authUser.id)
-    .single();
 
-  return user;
+
+  console.log("getCurrentUser: No auth user found");
+  return null;
 });
+
 
 export const getCurrentUserWithBanCheck = cache(async () => {
   const user = await getCurrentUser();

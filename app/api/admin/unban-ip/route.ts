@@ -6,7 +6,7 @@ export async function POST(req: Request) {
   try {
     const admin = await getCurrentUser();
 
-    if (!admin || admin.role !== 'admin') {
+    if (!admin || (admin.role !== 'admin' && !admin.is_admin)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
@@ -23,9 +23,8 @@ export async function POST(req: Request) {
 
     const { error } = await supabase
       .from("ip_blacklist")
-      .update({ is_active: false })
-      .eq("ip_address", ipAddress)
-      .eq("is_active", true);
+      .delete()
+      .eq("ip_address", ipAddress);
 
     if (error) {
       console.error("Error removing IP blacklist:", error);

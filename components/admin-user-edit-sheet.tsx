@@ -212,13 +212,7 @@ export function AdminUserEditSheet({ user, isOpen, onClose, isCurrentUserAdmin }
                                     {user.email}
                                 </div>
                             </div>
-                            <div className="bg-white/5 p-3 rounded-lg border border-white/5">
-                                <span className="text-xs text-white/40 block mb-1">Discord ID</span>
-                                <div className="font-mono text-sm flex items-center gap-2">
-                                    <Hash className="w-3 h-3 text-white/40" />
-                                    {user.discord_id || "Not Linked"}
-                                </div>
-                            </div>
+
                         </div>
                     </div>
 

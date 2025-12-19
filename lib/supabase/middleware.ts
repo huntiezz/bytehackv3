@@ -6,9 +6,13 @@ export async function updateSession(request: NextRequest) {
     request,
   })
 
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    throw new Error("Missing Supabase environment variables");
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -30,7 +34,12 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  if (!supabase) {
+    throw new Error("Failed to create Supabase client in middleware");
+  }
+
+  // Refresh session if needed
   const { data: { user } } = await supabase.auth.getUser()
 
-  return supabaseResponse
+  return { supabase, response: supabaseResponse, user }
 }

@@ -63,6 +63,26 @@ export async function POST(request: Request) {
                 .eq('id', data.user.id)
                 .single();
 
+            // Check if user is banned
+            const { data: banData } = await supabase
+                .from('bans')
+                .select('*')
+                .eq('user_id', data.user.id)
+                .eq('is_active', true)
+                .maybeSingle();
+
+            if (banData) {
+                const isExpired = banData.expires_at && new Date(banData.expires_at) < new Date();
+                if (!isExpired) {
+                    await supabase.auth.signOut();
+                    return NextResponse.json({
+                        error: "Account banned",
+                        banReason: banData.reason,
+                        expiresAt: banData.expires_at
+                    }, { status: 403 });
+                }
+            }
+
             if (!profile || !profile.username) {
                 const fallbackUsername = (data.user.user_metadata?.username || email.split('@')[0]).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
                 await supabase.from('profiles').upsert({
@@ -70,8 +90,15 @@ export async function POST(request: Request) {
                     username: fallbackUsername,
                     display_name: fallbackUsername,
                     email: email,
+                    last_ip: ip,
                     updated_at: new Date().toISOString()
                 }, { onConflict: 'id' });
+            } else {
+                // Update IP for existing user if saved profile exists
+                await supabase.from('profiles').update({
+                    last_ip: ip,
+                    last_login: new Date().toISOString()
+                }).eq('id', data.user.id);
             }
         }
 

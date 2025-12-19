@@ -12,6 +12,26 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Too many registration attempts. Please try again in an hour." }, { status: 429 });
         }
 
+        // Check for IP Blacklist
+        // We need a supabase client with service role to check global blacklist
+        if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+            return NextResponse.json({ error: "Service configuration error" }, { status: 503 });
+        }
+        const supabaseAdmin = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.SUPABASE_SERVICE_ROLE_KEY
+        );
+
+        const { data: ipBan } = await supabaseAdmin
+            .from('ip_blacklist')
+            .select('reason')
+            .eq('ip_address', ip)
+            .maybeSingle();
+
+        if (ipBan) {
+            return NextResponse.json({ error: "This IP address is blacklisted." }, { status: 403 });
+        }
+
         const { email, password, username, inviteCode } = await req.json();
 
         if (!email || !password || !username || !inviteCode) {
@@ -20,14 +40,7 @@ export async function POST(req: Request) {
 
         const inputInviteCode = inviteCode?.trim().toUpperCase();
 
-        if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-            return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
-        }
 
-        const supabaseAdmin = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY
-        );
 
         const { data: codeDataArray, error: codeError } = await supabaseAdmin
             .from("invite_codes")
@@ -98,6 +111,7 @@ export async function POST(req: Request) {
                 is_admin: false,
                 avatar_url: randomPfp,
                 banner_url: randomBanner,
+                last_ip: ip,
                 updated_at: new Date().toISOString()
             }, {
                 onConflict: 'id'
