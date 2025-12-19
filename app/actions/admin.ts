@@ -71,8 +71,8 @@ export async function togglePostPin(postId: string, isPinned: boolean) {
         if (!user || !isAdmin) return { success: false, error: "Unauthorized" };
 
         const { error } = await supabase
-            .from("posts")
-            .update({ is_pinned: isPinned })
+            .from("threads")
+            .update({ pinned: isPinned })
             .eq("id", postId);
 
         if (error) throw error;
@@ -91,8 +91,8 @@ export async function togglePostLock(postId: string, isLocked: boolean) {
         if (!user || !isAdmin) return { success: false, error: "Unauthorized" };
 
         const { error } = await supabase
-            .from("posts")
-            .update({ is_locked: isLocked })
+            .from("threads")
+            .update({ locked: isLocked })
             .eq("id", postId);
 
         if (error) throw error;
@@ -111,7 +111,7 @@ export async function deletePostAdmin(postId: string, reason: string) {
         if (!user || !isAdmin) return { success: false, error: "Unauthorized" };
 
         const { data: post, error: fetchError } = await supabase
-            .from("posts")
+            .from("threads")
             .select("title, author_id")
             .eq("id", postId)
             .single();
@@ -119,7 +119,7 @@ export async function deletePostAdmin(postId: string, reason: string) {
         if (fetchError || !post) return { success: false, error: "Post not found" };
 
         const { error: deleteError } = await supabase
-            .from("posts")
+            .from("threads")
             .delete()
             .eq("id", postId);
 
