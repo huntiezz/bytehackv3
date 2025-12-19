@@ -1,6 +1,8 @@
+
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
@@ -10,11 +12,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const { 
-      userId, 
-      reason, 
+    // Rate limit admin actions to prevent abuse (e.g., if token leaked)
+    const { success } = await rateLimit(`admin_action:${admin.id}`, 20, 60);
+    if (!success) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+    }
+
+    const {
+      userId,
+      reason,
       durationHours,
-      blacklistIp = true 
+      blacklistIp = true
     } = await req.json();
 
     if (!userId || !reason) {
@@ -59,6 +67,12 @@ export async function DELETE(req: Request) {
 
     if (!admin || admin.role !== 'admin') {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    // Rate limit
+    const { success } = await rateLimit(`admin_action:${admin.id}`, 20, 60);
+    if (!success) {
+      return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
     }
 
     const { userId } = await req.json();

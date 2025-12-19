@@ -1,11 +1,19 @@
+
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
     try {
         const user = await getCurrentUser();
         if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Rate limit: 20 Presigned URLs per 10 minutes
+        const { success } = await rateLimit(`upload_sign:${user.id}`, 20, 600);
+        if (!success) {
+            return NextResponse.json({ error: "Upload limit exceeded. Please wait." }, { status: 429 });
         }
 
         const { filename, contentType } = await req.json();

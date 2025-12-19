@@ -1,17 +1,26 @@
+
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/lib/security";
 
 export async function POST(request: Request) {
     try {
+        const ip = request.headers.get("x-forwarded-for") || "unknown";
+        const { success } = await rateLimit(`login:${ip}`, 5, 300); // 5 attempts per 5 minutes
+
+        if (!success) {
+            return NextResponse.json({ error: "Too many login attempts. Please try again later." }, { status: 429 });
+        }
+
         const { email, password } = await request.json();
 
         if (!email || !password) {
-            return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
+            return NextResponse.json({ error: "Invalid credentials" }, { status: 400 });
         }
 
         const cookieStore = await cookies();
-
         const response = NextResponse.json({ success: true });
 
         const supabase = createServerClient(
@@ -44,49 +53,34 @@ export async function POST(request: Request) {
         });
 
         if (error) {
-            console.error("Login API: Supabase auth error:", error.message);
-            return NextResponse.json({ error: error.message }, { status: 401 });
+            console.warn(`Login failed for ${email}: ${error.message}`); // Log internally, don't return to user
+            return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
         }
 
         if (data.user) {
-            console.log("Login API: Login successful for", email, "User ID:", data.user.id);
-
-            const { data: profile, error: profileError } = await supabase
+            // Check for profile existence and critical fields without exposing logic
+            const { data: profile } = await supabase
                 .from('profiles')
-                .select('*')
+                .select('username')
                 .eq('id', data.user.id)
                 .single();
 
-            if (profileError || !profile || !profile.username) {
-                console.warn("Login API: User has faulty profile (NULL username). Attempting auto-fix.");
-
-                const metaName = data.user.user_metadata?.username || data.user.user_metadata?.name;
-                const emailName = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '');
-                const fallbackUsername = (metaName || emailName || 'user_' + data.user.id.slice(0, 8)).toLowerCase();
-
-                const { error: fixError } = await supabase
-                    .from('profiles')
-                    .upsert({
-                        id: data.user.id,
-                        username: fallbackUsername,
-                        display_name: fallbackUsername,
-                        email: email,
-                        updated_at: new Date().toISOString()
-                    }, { onConflict: 'id' });
-
-                if (fixError) {
-                    console.error("Login API: Failed to auto-fix profile:", fixError);
-                } else {
-                    console.log("Login API: Profile auto-fixed with username:", fallbackUsername);
-                }
-            } else {
-                console.log("Login API: Profile valid. Username:", profile.username);
+            // Auto-fix profile if missing (silent)
+            if (!profile || !profile.username) {
+                const fallbackUsername = (data.user.user_metadata?.username || email.split('@')[0]).replace(/[^a-zA-Z0-9_]/g, '').toLowerCase();
+                await supabase.from('profiles').upsert({
+                    id: data.user.id,
+                    username: fallbackUsername,
+                    display_name: fallbackUsername,
+                    email: email,
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'id' });
             }
         }
 
         return response;
     } catch (error) {
         console.error("Login API Error:", error);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        return NextResponse.json({ error: "Request failed" }, { status: 500 });
     }
 }

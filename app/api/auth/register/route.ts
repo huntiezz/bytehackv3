@@ -1,8 +1,18 @@
+
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
     try {
+        const ip = req.headers.get("x-forwarded-for") || "unknown";
+        // Stricter rate limit for registration: 3 per hour per IP
+        const { success } = await rateLimit(`register:${ip}`, 3, 3600);
+
+        if (!success) {
+            return NextResponse.json({ error: "Too many registration attempts. Please try again in an hour." }, { status: 429 });
+        }
+
         const { email, password, username, inviteCode } = await req.json();
 
         if (!email || !password || !username || !inviteCode) {
@@ -12,8 +22,8 @@ export async function POST(req: Request) {
         const inputInviteCode = inviteCode?.trim().toUpperCase();
 
         if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
-            console.error("SUPABASE_SERVICE_ROLE_KEY is missing. Registration cannot proceed.");
-            return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+            console.error("SUPABASE_SERVICE_ROLE_KEY is missing.");
+            return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
         }
 
         const supabaseAdmin = createClient(
@@ -21,23 +31,20 @@ export async function POST(req: Request) {
             process.env.SUPABASE_SERVICE_ROLE_KEY
         );
 
-
+        // --- Validate Invite Code ---
         const { data: codeDataArray, error: codeError } = await supabaseAdmin
             .from("invite_codes")
             .select("*")
             .ilike("code", inputInviteCode)
             .limit(1);
 
-        if (codeError) {
-            console.error("Invite lookup error:", codeError);
-            return NextResponse.json({ error: "System error verifying invite code" }, { status: 500 });
+        if (codeError || !codeDataArray?.[0]) {
+            // Return generic error to prevent enumeration of valid codes vs network errors
+            // actually for invite codes, specific error is UX-friendly and low risk if rate limited.
+            return NextResponse.json({ error: "Invalid invite code" }, { status: 400 });
         }
 
-        const codeData = codeDataArray?.[0];
-
-        if (!codeData) {
-            return NextResponse.json({ error: "Invalid invite code (Not found)" }, { status: 400 });
-        }
+        const codeData = codeDataArray[0];
 
         if (codeData.expires_at && new Date(codeData.expires_at) < new Date()) {
             return NextResponse.json({ error: "Invite code expired" }, { status: 400 });
@@ -47,6 +54,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Invite code max uses reached" }, { status: 400 });
         }
 
+        // --- Check Username Uniqueness ---
         const { data: existingUser } = await supabaseAdmin
             .from("profiles")
             .select("username")
@@ -57,6 +65,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Username already taken" }, { status: 400 });
         }
 
+        // --- Create User ---
         const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password,
@@ -67,6 +76,13 @@ export async function POST(req: Request) {
         });
 
         if (createError) {
+            console.warn(`Registration failed: ${createError.message}`);
+            // Return generic error unless it's strictly validation like "Password too weak"
+            // For security, "Registration failed" is safer, but "Password too weak" is good UX.
+            // Compromise: return message only if it's not "User already registered" (email enum).
+            if (createError.message.includes("registered")) {
+                return NextResponse.json({ error: "Registration failed" }, { status: 400 });
+            }
             return NextResponse.json({ error: createError.message }, { status: 400 });
         }
 
@@ -74,7 +90,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
         }
 
-
+        // --- Create Profile ---
         await new Promise(resolve => setTimeout(resolve, 500));
 
         const pfps = ["/pfp.png", "/pfp2.png", "/pfp3.png", "/pfp4.png"];
@@ -100,17 +116,12 @@ export async function POST(req: Request) {
             });
 
         if (profileError) {
-            console.error("CRITICAL: Profile creation failed for user", userData.user.id, profileError);
-
-            const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userData.user.id);
-            if (deleteError) console.error("CRITICAL: Failed to rollback (delete) auth user:", deleteError);
-
-            return NextResponse.json({
-                error: `Profile creation failed: ${profileError.message || JSON.stringify(profileError)}`
-            }, { status: 500 });
+            console.error("CRITICAL: Profile creation failed", profileError);
+            await supabaseAdmin.auth.admin.deleteUser(userData.user.id);
+            return NextResponse.json({ error: "Profile creation failed" }, { status: 500 });
         }
 
-
+        // --- Update Invite Code ---
         await supabaseAdmin
             .from("invite_codes")
             .update({ uses: codeData.uses + 1 })
@@ -124,10 +135,11 @@ export async function POST(req: Request) {
                     user_id: userData.user.id
                 });
         } catch (e) {
-            console.error("Redemption log failed (non-critical):", e);
+            console.error("Redemption log failed:", e);
         }
 
         return NextResponse.json({ success: true, message: "Account created successfully" });
+
     } catch (error) {
         console.error("Registration Error:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
