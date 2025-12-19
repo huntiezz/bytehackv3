@@ -181,9 +181,12 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
 export default async function PostPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
+  const id = resolvedParams.id;
+  console.log("Forum Page ID:", id);
+  console.log("Available slugs:", Object.keys(CATEGORY_SLUGS));
 
-  let categoryConfig = CATEGORY_SLUGS[resolvedParams.id];
-  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resolvedParams.id);
+  let categoryConfig = CATEGORY_SLUGS[id] || CATEGORY_SLUGS[id.toLowerCase()];
+  const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
   if (!categoryConfig && !isUUID) {
     const user = await getCurrentUser();
