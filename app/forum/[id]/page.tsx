@@ -100,6 +100,24 @@ const CATEGORY_SLUGS: Record<string, any> = {
     description: 'Buy and sell services (Verify first).',
     icon: 'ShoppingBag',
     filter: (query: any) => query.eq('category', 'marketplace')
+  },
+  'coding-discussion': {
+    title: 'Coding Discussion',
+    description: 'Programming help and source code.',
+    icon: 'Code',
+    filter: (query: any) => query.eq('category', 'coding-discussion')
+  },
+  'cheat-discussion': {
+    title: 'Cheat Discussion',
+    description: 'Game cheats and hacks discussion.',
+    icon: 'Zap',
+    filter: (query: any) => query.in('category', ['cheat-discussion', 'cheats-discussion', 'Cheat Discussion'])
+  },
+  'cheats-discussion': {
+    title: 'Cheats Discussion',
+    description: 'Game cheats and hacks discussion.',
+    icon: 'Zap',
+    filter: (query: any) => query.in('category', ['cheat-discussion', 'cheats-discussion', 'Cheat Discussion'])
   }
 };
 
