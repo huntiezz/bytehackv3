@@ -13,7 +13,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "You must be signed in to comment" }, { status: 401 });
     }
 
-    // Rate limit: 5 comments per minute per user
     const { success } = await rateLimit(`comment_create:${user.id}`, 5, 60);
     if (!success) {
       return NextResponse.json({ error: "You are commenting too fast. Please slow down." }, { status: 429 });
@@ -120,17 +119,9 @@ export async function DELETE(req: Request) {
       .single();
 
     if (!comment || comment.author_id !== user.id) {
-      // Allow admins to delete?
-      // For now, strict ownership check as per original code.
-      // But we should verify if admin can delete. 
-      // Original code only checked user.id. Assuming admins use a different route or we should add admin check.
-      // I'll stick to original logic but fix rate limit if I were to add it.
-      // DELETE might need rate limit too?
-      // Let's add it. 20 deletes per minute?
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Rate limit delete
     const { success } = await rateLimit(`comment_delete:${user.id}`, 20, 60);
     if (!success) {
       return NextResponse.json({ error: "You are doing that too fast." }, { status: 429 });

@@ -111,7 +111,6 @@ export async function PATCH(req: Request) {
 
     if (error) {
       console.error("Error updating profile:", error);
-      // Postgres error code 23505 is unique_violation
       if (error.code === '23505') {
         return NextResponse.json({ error: "Username already taken" }, { status: 400 });
       }

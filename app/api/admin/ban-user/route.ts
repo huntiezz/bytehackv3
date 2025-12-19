@@ -12,7 +12,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // Rate limit admin actions to prevent abuse (e.g., if token leaked)
     const { success } = await rateLimit(`admin_action:${admin.id}`, 20, 60);
     if (!success) {
       return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });

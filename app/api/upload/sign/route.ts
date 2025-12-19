@@ -10,7 +10,6 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Rate limit: 20 Presigned URLs per 10 minutes
         const { success } = await rateLimit(`upload_sign:${user.id}`, 20, 600);
         if (!success) {
             return NextResponse.json({ error: "Upload limit exceeded. Please wait." }, { status: 429 });
