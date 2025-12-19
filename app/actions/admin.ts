@@ -10,13 +10,15 @@ export async function updateUploadStatus(fileId: string, status: 'approved' | 'd
 
     try {
         const user = await getCurrentUser();
-        if (!user || user.role !== "admin") {
+        const isAdmin = user?.role === "admin" || user?.is_admin === true;
+
+        if (!user || !isAdmin) {
             return { success: false, error: "Unauthorized" };
         }
 
         const { data: file, error: fetchError } = await supabase
-            .from("forum_uploads")
-            .select("user_id, filename")
+            .from("thread_attachments")
+            .select("uploader_id, file_name")
             .eq("id", fileId)
             .single();
 
@@ -24,9 +26,19 @@ export async function updateUploadStatus(fileId: string, status: 'approved' | 'd
             return { success: false, error: "File not found" };
         }
 
+        const updateData: any = { status };
+
+        if (status === 'approved') {
+            updateData.approved_by = user.id;
+            updateData.approved_at = new Date().toISOString();
+        } else {
+            updateData.approved_by = null;
+            updateData.approved_at = null;
+        }
+
         const { error } = await supabase
-            .from("forum_uploads")
-            .update({ status })
+            .from("thread_attachments")
+            .update(updateData)
             .eq("id", fileId);
 
         if (error) {
@@ -35,10 +47,10 @@ export async function updateUploadStatus(fileId: string, status: 'approved' | 'd
         }
 
         await createNotification({
-            userId: file.user_id,
+            userId: file.uploader_id,
             type: 'file_approved',
             title: `File ${status === 'approved' ? 'Approved' : 'Denied'}`,
-            message: `Your file "${file.filename}" was ${status}.`,
+            message: `Your file "${file.file_name}" was ${status}.`,
             referenceId: fileId,
             referenceUrl: status === 'approved' ? '/downloads' : '#'
         });
@@ -55,7 +67,8 @@ export async function togglePostPin(postId: string, isPinned: boolean) {
     const supabase = await createClient();
     try {
         const user = await getCurrentUser();
-        if (!user || user.role !== "admin") return { success: false, error: "Unauthorized" };
+        const isAdmin = user?.role === "admin" || user?.is_admin === true;
+        if (!user || !isAdmin) return { success: false, error: "Unauthorized" };
 
         const { error } = await supabase
             .from("posts")
@@ -74,7 +87,8 @@ export async function togglePostLock(postId: string, isLocked: boolean) {
     const supabase = await createClient();
     try {
         const user = await getCurrentUser();
-        if (!user || user.role !== "admin") return { success: false, error: "Unauthorized" };
+        const isAdmin = user?.role === "admin" || user?.is_admin === true;
+        if (!user || !isAdmin) return { success: false, error: "Unauthorized" };
 
         const { error } = await supabase
             .from("posts")
@@ -93,7 +107,8 @@ export async function deletePostAdmin(postId: string, reason: string) {
     const supabase = await createClient();
     try {
         const user = await getCurrentUser();
-        if (!user || user.role !== "admin") return { success: false, error: "Unauthorized" };
+        const isAdmin = user?.role === "admin" || user?.is_admin === true;
+        if (!user || !isAdmin) return { success: false, error: "Unauthorized" };
 
         const { data: post, error: fetchError } = await supabase
             .from("posts")

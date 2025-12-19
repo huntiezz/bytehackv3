@@ -55,7 +55,6 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
             } else {
                 toast.success("Account created! Logging in...");
 
-                // Auto-login
                 try {
                     const loginRes = await fetch("/api/auth/login", {
                         method: "POST",
@@ -72,7 +71,6 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
                         router.push("/forum");
                         router.refresh();
                     } else {
-                        // Fallback to login page if auto-login fails
                         setTimeout(() => router.push("/login"), 1000);
                     }
                 } catch (loginErr) {

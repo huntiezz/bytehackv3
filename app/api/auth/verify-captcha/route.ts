@@ -14,12 +14,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, error: "Server configuration error" }, { status: 500 });
         }
 
-        // Bypass for localhost
         if (process.env.NODE_ENV === "development" || process.env.NEXT_PUBLIC_APP_URL?.includes("localhost")) {
             return NextResponse.json({ success: true });
         }
 
-        // Google reCAPTCHA verification URL
         const verificationUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${code}`;
 
         const result = await fetch(verificationUrl, {

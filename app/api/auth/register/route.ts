@@ -74,9 +74,8 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Failed to create user" }, { status: 500 });
         }
 
-        // --- ATOMIC PROFILE CREATION ---
 
-        await new Promise(resolve => setTimeout(resolve, 500)); // Small delay to allow triggers/auth content to settle
+        await new Promise(resolve => setTimeout(resolve, 500));
 
         const pfps = ["/pfp.png", "/pfp2.png", "/pfp3.png", "/pfp4.png"];
         const banners = ["/banner.gif", "/banner2.gif", "/banner3.jpg"];
@@ -103,7 +102,6 @@ export async function POST(req: Request) {
         if (profileError) {
             console.error("CRITICAL: Profile creation failed for user", userData.user.id, profileError);
 
-            // Attempt Rollback
             const { error: deleteError } = await supabaseAdmin.auth.admin.deleteUser(userData.user.id);
             if (deleteError) console.error("CRITICAL: Failed to rollback (delete) auth user:", deleteError);
 
@@ -112,16 +110,12 @@ export async function POST(req: Request) {
             }, { status: 500 });
         }
 
-        // --- SUCCESS PATH ---
 
-        // Simple update to decrement uses. Redemption tracking can be done via triggers or logs if strictly needed,
-        // but for now we prioritize successful registration.
         await supabaseAdmin
             .from("invite_codes")
             .update({ uses: codeData.uses + 1 })
             .eq("id", codeData.id);
 
-        // Optional: track redemption
         try {
             await supabaseAdmin
                 .from("invite_code_redemptions")
@@ -134,7 +128,6 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({ success: true, message: "Account created successfully" });
-
     } catch (error) {
         console.error("Registration Error:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

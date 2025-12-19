@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
-import { MessageSquare, ThumbsUp, Share2, FileIcon, Lock, ArrowLeft, Pin, Plus } from "lucide-react";
+import { MessageSquare, ThumbsUp, Share2, FileIcon, Lock, ArrowLeft, Pin, Plus, CheckCircle } from "lucide-react";
 import { getCurrentUser } from "@/lib/auth";
 import { CommentSection } from "@/components/comment-section";
 import { ShareButton } from "@/components/share-button";
@@ -396,7 +396,10 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
   try {
     const { data } = await supabase
       .from("thread_attachments")
-      .select("*")
+      .select(`
+        *,
+        approver:profiles!approved_by(display_name, username, is_admin, role)
+      `)
       .eq("thread_id", resolvedParams.id);
 
     fileUploads = (data || []).filter((file: any) =>
@@ -623,13 +626,30 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                           </div>
 
                           <div className="mt-2 p-2 bg-black/40 rounded border border-white/5">
-                            <div className="text-[10px] font-mono space-y-1">
+                            <div className="text-[10px] font-mono space-y-2">
                               <div>
                                 <div className="font-semibold text-zinc-500 mb-0.5 uppercase tracking-wider">SHA-256</div>
                                 <div className="break-all text-zinc-400 select-all">
                                   {file.sha256}
                                 </div>
                               </div>
+
+                              {file.status === 'approved' && file.approver && (
+                                <div className="pt-2 border-t border-white/5">
+                                  <div className="flex flex-col gap-0.5">
+                                    <div className="font-semibold text-green-500 mb-0.5 uppercase tracking-wider flex items-center gap-1.5">
+                                      <CheckCircle className="w-3 h-3" />
+                                      Approved
+                                    </div>
+                                    <div className="text-zinc-400">
+                                      ByType <span className="text-zinc-300 font-bold">{file.approver.display_name || file.approver.username}</span>
+                                    </div>
+                                    <div className="text-zinc-500">
+                                      {file.approved_at ? formatDistanceToNow(new Date(file.approved_at), { addSuffix: true }) : 'Recently'}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </Card>

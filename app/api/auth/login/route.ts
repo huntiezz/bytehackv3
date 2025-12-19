@@ -12,7 +12,6 @@ export async function POST(request: Request) {
 
         const cookieStore = await cookies();
 
-        // Prepare response object
         const response = NextResponse.json({ success: true });
 
         const supabase = createServerClient(
@@ -25,9 +24,7 @@ export async function POST(request: Request) {
                     },
                     setAll(cookiesToSet) {
                         cookiesToSet.forEach(({ name, value, options }) => {
-                            // Sync with Next.js CookieStore
                             cookieStore.set(name, value, options);
-                            // Also explictly set on response for safety
                             response.cookies.set(name, value, options);
                         });
                     },
@@ -54,7 +51,6 @@ export async function POST(request: Request) {
         if (data.user) {
             console.log("Login API: Login successful for", email, "User ID:", data.user.id);
 
-            // --- USERNAME FIX & PROFILE CHECK ---
             const { data: profile, error: profileError } = await supabase
                 .from('profiles')
                 .select('*')
@@ -64,7 +60,6 @@ export async function POST(request: Request) {
             if (profileError || !profile || !profile.username) {
                 console.warn("Login API: User has faulty profile (NULL username). Attempting auto-fix.");
 
-                // Construct a username from email or metadata
                 const metaName = data.user.user_metadata?.username || data.user.user_metadata?.name;
                 const emailName = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '');
                 const fallbackUsername = (metaName || emailName || 'user_' + data.user.id.slice(0, 8)).toLowerCase();
@@ -87,7 +82,6 @@ export async function POST(request: Request) {
             } else {
                 console.log("Login API: Profile valid. Username:", profile.username);
             }
-            // ------------------------------------
         }
 
         return response;
