@@ -10,6 +10,9 @@ import { postProfileComment, getProfileComments } from "@/app/actions/profile-co
 import { formatDistanceToNow } from "date-fns";
 import toast from "react-hot-toast";
 
+// Profile comment length limit (must match backend)
+const PROFILE_COMMENT_MAX_LENGTH = 500;
+
 interface ProfileCommentsProps {
     targetUserId: string;
 }
@@ -31,9 +34,25 @@ export function ProfileComments({ targetUserId }: ProfileCommentsProps) {
         setComments(data);
     }
 
+    // Handle comment input with length enforcement
+    const handleCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = e.target.value;
+        if (newValue.length <= PROFILE_COMMENT_MAX_LENGTH) {
+            setNewComment(newValue);
+        } else {
+            toast.error(`Comment cannot exceed ${PROFILE_COMMENT_MAX_LENGTH} characters!`);
+        }
+    };
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
         if (!newComment.trim()) return;
+
+        // Double-check length before sending
+        if (newComment.trim().length > PROFILE_COMMENT_MAX_LENGTH) {
+            toast.error(`Comment cannot exceed ${PROFILE_COMMENT_MAX_LENGTH} characters!`);
+            return;
+        }
 
         setLoading(true);
         const result = await postProfileComment(targetUserId, newComment);
@@ -95,13 +114,32 @@ export function ProfileComments({ targetUserId }: ProfileCommentsProps) {
                     </div>
 
                     <form onSubmit={handleSubmit} className="mt-4 flex gap-2 pt-4 border-t border-white/10">
-                        <Input
-                            value={newComment}
-                            onChange={(e) => setNewComment(e.target.value)}
-                            placeholder="Write a comment..."
-                            className="bg-white/5 border-white/10 focus:border-primary/50 text-white placeholder:text-white/30"
-                        />
-                        <Button type="submit" size="icon" disabled={loading || !newComment.trim()} className="shrink-0">
+                        <div className="flex-1 space-y-1">
+                            <Input
+                                value={newComment}
+                                onChange={handleCommentChange}
+                                placeholder="Write a comment..."
+                                className="bg-white/5 border-white/10 focus:border-primary/50 text-white placeholder:text-white/30"
+                                maxLength={PROFILE_COMMENT_MAX_LENGTH}
+                            />
+                            <div className="text-[10px] text-right">
+                                <span className={`${
+                                    newComment.length > PROFILE_COMMENT_MAX_LENGTH * 0.9 
+                                        ? 'text-red-500 font-semibold' 
+                                        : newComment.length > PROFILE_COMMENT_MAX_LENGTH * 0.75 
+                                            ? 'text-yellow-500' 
+                                            : 'text-white/40'
+                                }`}>
+                                    {newComment.length} / {PROFILE_COMMENT_MAX_LENGTH}
+                                </span>
+                            </div>
+                        </div>
+                        <Button 
+                            type="submit" 
+                            size="icon" 
+                            disabled={loading || !newComment.trim() || newComment.length > PROFILE_COMMENT_MAX_LENGTH} 
+                            className="shrink-0 self-start"
+                        >
                             {loading ? <span className="animate-spin">⏳</span> : <Send className="w-4 h-4" />}
                         </Button>
                     </form>

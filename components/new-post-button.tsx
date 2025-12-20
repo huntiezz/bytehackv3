@@ -188,8 +188,24 @@ export function NewPostButton() {
 
       if (category === "Custom" && !customCategory.trim()) {
         toast.error("Please enter a custom category");
+        setLoading(false);
         return;
       }
+
+      // Fetch a cryptographically secure token for this post
+      toast.loading("Generating security token...", { id: 'token-gen' });
+      const tokenRes = await fetch("/api/posts/token", {
+        method: "GET",
+      });
+
+      if (!tokenRes.ok) {
+        toast.error("Failed to generate security token", { id: 'token-gen' });
+        setLoading(false);
+        return;
+      }
+
+      const { token: securityToken } = await tokenRes.json();
+      toast.success("Security token generated", { id: 'token-gen' });
 
       const postRes = await fetch("/api/posts", {
         method: "POST",
@@ -198,7 +214,8 @@ export function NewPostButton() {
           title,
           content,
           category: finalCategory,
-          tags: tags.split(',').map(t => t.trim()).filter(Boolean)
+          tags: tags.split(',').map(t => t.trim()).filter(Boolean),
+          securityToken // Include cryptographically signed token
         }),
       });
 

@@ -1,11 +1,28 @@
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { createNotification } from "@/lib/notifications";
 import { rateLimit } from "@/lib/rate-limit";
+import { sanitizeInput, getClientIp } from "@/lib/security";
 
-export async function POST(req: Request) {
+// Comment validation constants
+const COMMENT_LIMITS = {
+  MIN_LENGTH: 1,
+  MAX_LENGTH: 2000,
+};
+
+// Comment rate limits
+const COMMENT_RATE_LIMITS = {
+  IP_LIMIT: 20, // 20 comments per IP per hour
+  IP_WINDOW: 3600, // 1 hour
+  USER_LIMIT: 30, // 30 comments per user per hour
+  USER_WINDOW: 3600,
+  BURST_LIMIT: 5, // Max 5 comments per minute (prevents rapid spam)
+  BURST_WINDOW: 60, // 1 minute
+};
+
+export async function POST(req: NextRequest) {
   try {
     const user = await getCurrentUser();
 
@@ -13,9 +30,84 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "You must be signed in to comment" }, { status: 401 });
     }
 
-    const { success } = await rateLimit(`comment_create:${user.id}`, 5, 60);
-    if (!success) {
-      return NextResponse.json({ error: "You are commenting too fast. Please slow down." }, { status: 429 });
+    const clientIp = getClientIp(req);
+
+    // LAYER 1: IP-based rate limiting
+    const ipRateLimit = await rateLimit(
+      `comment:ip:${clientIp}`,
+      COMMENT_RATE_LIMITS.IP_LIMIT,
+      COMMENT_RATE_LIMITS.IP_WINDOW
+    );
+
+    if (!ipRateLimit.success) {
+      const resetTime = Math.ceil((ipRateLimit.reset - Date.now()) / 1000 / 60);
+      return NextResponse.json(
+        { 
+          error: `Too many comments from this IP. Please try again in ${resetTime} minutes.`,
+          retryAfter: ipRateLimit.reset 
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((ipRateLimit.reset - Date.now()) / 1000)),
+            'X-RateLimit-Limit': String(COMMENT_RATE_LIMITS.IP_LIMIT),
+            'X-RateLimit-Remaining': String(ipRateLimit.remaining),
+            'X-RateLimit-Reset': String(ipRateLimit.reset),
+          }
+        }
+      );
+    }
+
+    // LAYER 2: User-based rate limiting
+    const userRateLimit = await rateLimit(
+      `comment:user:${user.id}`,
+      COMMENT_RATE_LIMITS.USER_LIMIT,
+      COMMENT_RATE_LIMITS.USER_WINDOW
+    );
+
+    if (!userRateLimit.success) {
+      const resetTime = Math.ceil((userRateLimit.reset - Date.now()) / 1000 / 60);
+      return NextResponse.json(
+        { 
+          error: `You're commenting too quickly. Please wait ${resetTime} minutes.`,
+          retryAfter: userRateLimit.reset 
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((userRateLimit.reset - Date.now()) / 1000)),
+            'X-RateLimit-Limit': String(COMMENT_RATE_LIMITS.USER_LIMIT),
+            'X-RateLimit-Remaining': String(userRateLimit.remaining),
+            'X-RateLimit-Reset': String(userRateLimit.reset),
+          }
+        }
+      );
+    }
+
+    // LAYER 3: Burst protection (prevents rapid successive comments)
+    const burstLimit = await rateLimit(
+      `comment:burst:${user.id}`,
+      COMMENT_RATE_LIMITS.BURST_LIMIT,
+      COMMENT_RATE_LIMITS.BURST_WINDOW
+    );
+
+    if (!burstLimit.success) {
+      const resetTime = Math.ceil((burstLimit.reset - Date.now()) / 1000);
+      return NextResponse.json(
+        { 
+          error: `Slow down! Wait ${resetTime} seconds before commenting again.`,
+          retryAfter: burstLimit.reset 
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil((burstLimit.reset - Date.now()) / 1000)),
+            'X-RateLimit-Limit': String(COMMENT_RATE_LIMITS.BURST_LIMIT),
+            'X-RateLimit-Remaining': String(burstLimit.remaining),
+            'X-RateLimit-Reset': String(burstLimit.reset),
+          }
+        }
+      );
     }
 
     const { postId, content, parentCommentId } = await req.json();
@@ -24,16 +116,72 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    if (content.length > 2000) {
-      return NextResponse.json({ error: "Comment cannot exceed 2000 characters." }, { status: 400 });
+    // Trim content first
+    const trimmedContent = content.trim();
+
+    // Validate minimum length
+    if (trimmedContent.length < COMMENT_LIMITS.MIN_LENGTH) {
+      return NextResponse.json({ error: "Comment cannot be empty." }, { status: 400 });
     }
 
+    // CRITICAL: Server-side length validation (prevents Burp Suite bypass)
+    if (trimmedContent.length > COMMENT_LIMITS.MAX_LENGTH) {
+      return NextResponse.json({ 
+        error: `Comment cannot exceed ${COMMENT_LIMITS.MAX_LENGTH} characters. Current length: ${trimmedContent.length}` 
+      }, { status: 400 });
+    }
+
+    // Additional security: Check if someone is trying to send extremely long content
+    // Even if they bypass the trim, catch raw content that's too long
+    if (content.length > COMMENT_LIMITS.MAX_LENGTH + 1000) {
+      return NextResponse.json({ 
+        error: "Invalid request - content too large" 
+      }, { status: 400 });
+    }
+
+    // Sanitize input to prevent XSS
+    const sanitizedContent = sanitizeInput(trimmedContent);
+
     const supabase = await createClient();
+
+    // LAYER 4: Duplicate comment detection (prevents copy-paste spam)
+    const { data: recentComments } = await supabase
+      .from("thread_replies")
+      .select("id, body")
+      .eq("author_id", user.id)
+      .gte("created_at", new Date(Date.now() - 3600000).toISOString()) // Last hour
+      .limit(20);
+
+    if (recentComments && recentComments.length > 0) {
+      // Check if user posted identical content recently
+      const isDuplicate = recentComments.some(
+        (reply) => reply.body.toLowerCase().trim() === sanitizedContent.toLowerCase().trim()
+      );
+
+      if (isDuplicate) {
+        return NextResponse.json(
+          { error: "You've already posted this comment recently. Please create unique comments." },
+          { status: 409 }
+        );
+      }
+    }
+
+    // LAYER 5: Check for spam patterns (very short repeated comments)
+    if (sanitizedContent.length < 10 && recentComments && recentComments.length >= 3) {
+      const shortComments = recentComments.filter(c => c.body.length < 10);
+      if (shortComments.length >= 3) {
+        return NextResponse.json(
+          { error: "Please avoid posting very short comments repeatedly." },
+          { status: 429 }
+        );
+      }
+    }
+
     const { data: comment, error } = await supabase
       .from("thread_replies")
       .insert({
         thread_id: postId,
-        body: content,
+        body: sanitizedContent,
         author_id: user.id,
         parent_id: parentCommentId || null,
       })
@@ -95,12 +243,29 @@ export async function POST(req: Request) {
   }
 }
 
-export async function DELETE(req: Request) {
+export async function DELETE(req: NextRequest) {
   try {
     const user = await getCurrentUser();
 
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const clientIp = getClientIp(req);
+
+    // Rate limiting for deletions
+    const deleteRateLimit = await rateLimit(
+      `comment:delete:${user.id}`,
+      30, // 30 deletions per hour
+      3600
+    );
+
+    if (!deleteRateLimit.success) {
+      const resetTime = Math.ceil((deleteRateLimit.reset - Date.now()) / 1000 / 60);
+      return NextResponse.json(
+        { error: `Too many deletions. Please try again in ${resetTime} minutes.` },
+        { status: 429 }
+      );
     }
 
     const { searchParams } = new URL(req.url);
@@ -120,11 +285,6 @@ export async function DELETE(req: Request) {
 
     if (!comment || comment.author_id !== user.id) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
-
-    const { success } = await rateLimit(`comment_delete:${user.id}`, 20, 60);
-    if (!success) {
-      return NextResponse.json({ error: "You are doing that too fast." }, { status: 429 });
     }
 
     const { error } = await supabase

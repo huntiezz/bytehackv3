@@ -10,7 +10,23 @@ import { Card } from "@/components/ui/card";
 import { Upload, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { uploadFile } from "@/lib/upload-file";
-import { ProfileStylePicker } from "@/components/profile-style-picker";
+
+// Validation rules (must match backend)
+const VALIDATION_RULES = {
+  USERNAME: {
+    MAX_LENGTH: 14,
+    MIN_LENGTH: 3,
+    PATTERN: /^[a-zA-Z0-9._-]+$/, // No spaces
+  },
+  DISPLAY_NAME: {
+    MAX_LENGTH: 14,
+    PATTERN: /^[a-zA-Z0-9._\- ]+$/, // Can have spaces
+    MAX_SPACES: 1,
+  },
+  BIO: {
+    MAX_LENGTH: 500,
+  },
+};
 
 interface AccountSettingsFormProps {
   user: any;
@@ -36,15 +52,72 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
   const [bannerFile, setBannerFile] = useState<File | null>(null);
   const [bannerPreview, setBannerPreview] = useState<string | null>(user.banner_image || user.banner_url || null);
 
-  const [fontStyle, setFontStyle] = useState(user.font_style || "default");
-  const [nameColor, setNameColor] = useState(user.name_color || "#ffffff");
-  const [nameEffect, setNameEffect] = useState(user.name_effect || "none");
-  const [profileDecoration, setProfileDecoration] = useState(user.profile_decoration || "");
-
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  const userLevel = user.level || 0;
+  // Handle username change with validation
+  const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    
+    // Block spaces immediately
+    if (newValue.includes(' ')) {
+      toast.error('Username cannot contain spaces');
+      return;
+    }
+
+    // Enforce max length
+    if (newValue.length <= VALIDATION_RULES.USERNAME.MAX_LENGTH) {
+      // Only allow valid characters
+      if (newValue === '' || VALIDATION_RULES.USERNAME.PATTERN.test(newValue)) {
+        setUsername(newValue);
+      } else {
+        toast.error('Username can only contain letters, numbers, dots (.), underscores (_), or hyphens (-)');
+      }
+    } else {
+      toast.error(`Username cannot exceed ${VALIDATION_RULES.USERNAME.MAX_LENGTH} characters`);
+    }
+  };
+
+  // Handle display name change with validation
+  const handleDisplayNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+
+    // Check for multiple consecutive spaces
+    if (/\s{2,}/.test(newValue)) {
+      toast.error('No multiple spaces allowed');
+      return;
+    }
+
+    // Count spaces
+    const spaceCount = (newValue.match(/ /g) || []).length;
+    if (spaceCount > VALIDATION_RULES.DISPLAY_NAME.MAX_SPACES) {
+      toast.error(`Display name can have maximum ${VALIDATION_RULES.DISPLAY_NAME.MAX_SPACES} space`);
+      return;
+    }
+
+    // Enforce max length
+    if (newValue.length <= VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH) {
+      // Only allow valid characters
+      if (newValue === '' || VALIDATION_RULES.DISPLAY_NAME.PATTERN.test(newValue)) {
+        setDisplayName(newValue);
+      } else {
+        toast.error('Display name can only contain letters, numbers, dots (.), underscores (_), hyphens (-), and spaces');
+      }
+    } else {
+      toast.error(`Display name cannot exceed ${VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH} characters`);
+    }
+  };
+
+  // Handle bio change with validation
+  const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    
+    if (newValue.length <= VALIDATION_RULES.BIO.MAX_LENGTH) {
+      setBio(newValue);
+    } else {
+      toast.error(`Bio cannot exceed ${VALIDATION_RULES.BIO.MAX_LENGTH} characters`);
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
     const file = e.target.files?.[0];
@@ -65,6 +138,28 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Frontend validation before submit
+    if (username.trim().length < VALIDATION_RULES.USERNAME.MIN_LENGTH) {
+      toast.error(`Username must be at least ${VALIDATION_RULES.USERNAME.MIN_LENGTH} characters`);
+      return;
+    }
+
+    if (username.trim().length > VALIDATION_RULES.USERNAME.MAX_LENGTH) {
+      toast.error(`Username cannot exceed ${VALIDATION_RULES.USERNAME.MAX_LENGTH} characters`);
+      return;
+    }
+
+    if (displayName.trim().length > VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH) {
+      toast.error(`Display name cannot exceed ${VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH} characters`);
+      return;
+    }
+
+    if (bio.trim().length > VALIDATION_RULES.BIO.MAX_LENGTH) {
+      toast.error(`Bio cannot exceed ${VALIDATION_RULES.BIO.MAX_LENGTH} characters`);
+      return;
+    }
+    
     setLoading(true);
 
     try {
@@ -96,13 +191,10 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           display_name: displayName,
-          username: username.toLowerCase().replace(/\s+/g, '_'),
+          username: username.toLowerCase(),
           bio: bio,
           profile_picture: finalAvatarUrl,
           banner_image: finalBannerUrl,
-          font_style: userLevel >= 1 ? fontStyle : undefined,
-          name_color: userLevel >= 1 ? nameColor : undefined,
-          name_effect: userLevel >= 1 ? nameEffect : undefined,
         }),
       });
 
@@ -177,92 +269,94 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
 
         {/* Username */}
         <div className="space-y-3">
-          <label className="text-sm font-semibold text-zinc-400 ml-1">Username</label>
+          <div className="flex justify-between items-end px-1">
+            <label className="text-sm font-semibold text-zinc-400">Username</label>
+            <span className={`text-xs ${
+              username.length > VALIDATION_RULES.USERNAME.MAX_LENGTH * 0.9 
+                ? 'text-red-500 font-semibold' 
+                : username.length > VALIDATION_RULES.USERNAME.MAX_LENGTH * 0.75 
+                  ? 'text-yellow-500' 
+                  : 'text-zinc-500'
+            }`}>
+              {username.length}/{VALIDATION_RULES.USERNAME.MAX_LENGTH}
+            </span>
+          </div>
           <Input
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={handleUsernameChange}
             className="h-14 bg-[#09090b] border-zinc-800 focus:border-zinc-700 text-lg rounded-xl px-5"
             placeholder="Your username"
+            maxLength={VALIDATION_RULES.USERNAME.MAX_LENGTH}
           />
-          <p className="text-xs text-zinc-500 ml-1">You can change your username 2 times per 7 days.</p>
+          <p className="text-xs text-zinc-500 ml-1">
+            Letters, numbers, dots (.), underscores (_), hyphens (-) only. No spaces. You can change your username 2 times per 7 days.
+          </p>
         </div>
 
         {/* Display Name */}
         <div className="space-y-3">
-          <label className="text-sm font-semibold text-zinc-400 ml-1">Display Name</label>
+          <div className="flex justify-between items-end px-1">
+            <label className="text-sm font-semibold text-zinc-400">Display Name</label>
+            <span className={`text-xs ${
+              displayName.length > VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH * 0.9 
+                ? 'text-red-500 font-semibold' 
+                : displayName.length > VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH * 0.75 
+                  ? 'text-yellow-500' 
+                  : 'text-zinc-500'
+            }`}>
+              {displayName.length}/{VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH}
+            </span>
+          </div>
           <Input
             value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
+            onChange={handleDisplayNameChange}
             className="h-14 bg-[#09090b] border-zinc-800 focus:border-zinc-700 text-lg rounded-xl px-5"
             placeholder="Your display name"
+            maxLength={VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH}
           />
-        </div>
-
-        {/* Username Effect */}
-        <div className="space-y-3">
-          <div className="flex justify-between items-end px-1">
-            <label className="text-sm font-semibold text-zinc-400">Username effect</label>
-          </div>
-
-          {/* Custom Trigger UI */}
-          <ProfileStylePicker
-            font={fontStyle}
-            effect={nameEffect}
-            color={nameColor}
-            username={displayName || username || "User"}
-            onFontChange={setFontStyle}
-            onEffectChange={setNameEffect}
-            onColorChange={setNameColor}
-          />
-
-          {/* We are replacing the DialogTrigger inside ProfileStylePicker with this layout? 
-                      Wait, ProfileStylePicker IS the UI component. I need to make sure IT renders the box. 
-                      Ah, I implemented `ProfileStylePicker` to render the trigger box itself in the previous step.
-                      So I just place it here. PERFECT.
-                  */}
-        </div>
-
-        {/* Profile Decoration */}
-        <div className="space-y-3">
-          <label className="text-sm font-semibold text-zinc-400 ml-1">Profile Decoration</label>
-          <Input
-            placeholder="e.g., 👑 Elite Member, ⭐ Veteran"
-            value={profileDecoration}
-            onChange={(e) => setProfileDecoration(e.target.value)}
-            className="h-14 bg-[#09090b] border-zinc-800 focus:border-zinc-700 text-lg rounded-xl px-5"
-            maxLength={50}
-          />
-          <p className="text-xs text-zinc-500 ml-1">Custom badge text that appears on your profile</p>
-        </div>
-
-        {/* Email */}
-        <div className="space-y-3">
-          <label className="text-sm font-semibold text-zinc-400 ml-1">Email</label>
-          <Input
-            value={user.email}
-            disabled
-            className="h-14 bg-[#09090b] border-zinc-800 text-zinc-500 text-lg rounded-xl px-5"
-          />
-          <p className="text-xs text-zinc-500 ml-1">Email cannot be changed. Contact support if needed.</p>
+          <p className="text-xs text-zinc-500 ml-1">
+            Letters, numbers, dots (.), underscores (_), hyphens (-), and max 1 space allowed.
+          </p>
         </div>
 
         {/* Bio */}
         <div className="space-y-3">
           <div className="flex justify-between px-1">
             <label className="text-sm font-semibold text-zinc-400">Bio</label>
-            <span className="text-xs text-zinc-500">{bio.length}/500</span>
+            <span className={`text-xs ${
+              bio.length > VALIDATION_RULES.BIO.MAX_LENGTH * 0.9 
+                ? 'text-red-500 font-semibold' 
+                : bio.length > VALIDATION_RULES.BIO.MAX_LENGTH * 0.75 
+                  ? 'text-yellow-500' 
+                  : 'text-zinc-500'
+            }`}>
+              {bio.length}/{VALIDATION_RULES.BIO.MAX_LENGTH}
+            </span>
           </div>
           <Textarea
             value={bio}
-            onChange={(e) => setBio(e.target.value)}
+            onChange={handleBioChange}
             className="min-h-[140px] bg-[#09090b] border-zinc-800 focus:border-zinc-700 rounded-xl px-5 py-4 text-base resize-none"
-            placeholder="Tell use about yourself..."
+            placeholder="Tell us about yourself..."
+            maxLength={VALIDATION_RULES.BIO.MAX_LENGTH}
           />
         </div>
 
         {/* Security / Password placeholder (assuming separate flow or modal, but UI shown in ref) */}
         <div className="pt-8 border-t border-zinc-900/50 space-y-6">
           <h3 className="text-lg font-semibold text-white ml-1">Security</h3>
+          
+          {/* Email in Security */}
+          <div className="space-y-3">
+            <label className="text-sm font-semibold text-zinc-400 ml-1">Email</label>
+            <Input
+              value={user.email}
+              disabled
+              className="h-14 bg-[#09090b] border-zinc-800 text-zinc-500 text-lg rounded-xl px-5"
+            />
+            <p className="text-xs text-zinc-500 ml-1">Email cannot be changed. Contact support if needed.</p>
+          </div>
+
           <Input placeholder="Enter current password" type="password" className="h-14 bg-[#09090b] border-zinc-800 rounded-xl px-5" />
           <Input placeholder="Enter new password" type="password" className="h-14 bg-[#09090b] border-zinc-800 rounded-xl px-5" />
           <Input placeholder="Confirm new password" type="password" className="h-14 bg-[#09090b] border-zinc-800 rounded-xl px-5" />

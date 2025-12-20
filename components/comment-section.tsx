@@ -12,6 +12,9 @@ import { StyledUsername } from "@/components/styled-username";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
+// Comment length limits (must match backend)
+const COMMENT_MAX_LENGTH = 2000;
+
 interface Comment {
   id: string;
   body: string;
@@ -45,9 +48,36 @@ export function CommentSection({ postId, postAuthorId, comments, currentUserId, 
   const [replyContent, setReplyContent] = useState("");
   const router = useRouter();
 
+  // Handle content change with length enforcement
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value;
+    // Enforce max length on frontend (prevents typing beyond limit)
+    if (newContent.length <= COMMENT_MAX_LENGTH) {
+      setContent(newContent);
+    } else {
+      toast.error(`Comment cannot exceed ${COMMENT_MAX_LENGTH} characters!`);
+    }
+  };
+
+  // Handle reply content change with length enforcement
+  const handleReplyContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value;
+    if (newContent.length <= COMMENT_MAX_LENGTH) {
+      setReplyContent(newContent);
+    } else {
+      toast.error(`Reply cannot exceed ${COMMENT_MAX_LENGTH} characters!`);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLocked || !content.trim()) return;
+
+    // Double-check length before sending
+    if (content.trim().length > COMMENT_MAX_LENGTH) {
+      toast.error(`Comment cannot exceed ${COMMENT_MAX_LENGTH} characters!`);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -74,6 +104,12 @@ export function CommentSection({ postId, postAuthorId, comments, currentUserId, 
 
   const handleReply = async (parentId: string) => {
     if (isLocked || !replyContent.trim()) return;
+
+    // Double-check length before sending
+    if (replyContent.trim().length > COMMENT_MAX_LENGTH) {
+      toast.error(`Reply cannot exceed ${COMMENT_MAX_LENGTH} characters!`);
+      return;
+    }
 
     setLoading(true);
     try {
@@ -285,16 +321,28 @@ export function CommentSection({ postId, postAuthorId, comments, currentUserId, 
                   <Textarea
                     placeholder={`Reply to ${comment.author.username.length > 15 ? comment.author.username.substring(0, 15) + "..." : comment.author.username}...`}
                     value={replyContent}
-                    onChange={(e) => setReplyContent(e.target.value)}
+                    onChange={handleReplyContentChange}
                     rows={2}
                     disabled={loading}
                     className="text-sm"
+                    maxLength={COMMENT_MAX_LENGTH}
                   />
+                  <div className="flex justify-between items-center text-xs">
+                    <span className={`${
+                      replyContent.length > COMMENT_MAX_LENGTH * 0.9 
+                        ? 'text-red-500 font-semibold' 
+                        : replyContent.length > COMMENT_MAX_LENGTH * 0.75 
+                          ? 'text-yellow-500' 
+                          : 'text-muted-foreground'
+                    }`}>
+                      {replyContent.length} / {COMMENT_MAX_LENGTH}
+                    </span>
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       size="sm"
                       onClick={() => handleReply(comment.id)}
-                      disabled={loading || !replyContent.trim()}
+                      disabled={loading || !replyContent.trim() || replyContent.length > COMMENT_MAX_LENGTH}
                     >
                       {loading ? "Posting..." : "Post Reply"}
                     </Button>
@@ -335,14 +383,36 @@ export function CommentSection({ postId, postAuthorId, comments, currentUserId, 
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Textarea
-            placeholder="Write a comment..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            rows={3}
-            disabled={loading}
-          />
-          <Button type="submit" disabled={loading || !content.trim()}>
+          <div className="space-y-2">
+            <Textarea
+              placeholder="Write a comment..."
+              value={content}
+              onChange={handleContentChange}
+              rows={3}
+              disabled={loading}
+              maxLength={COMMENT_MAX_LENGTH}
+            />
+            <div className="flex justify-between items-center text-sm">
+              <span className={`${
+                content.length > COMMENT_MAX_LENGTH * 0.9 
+                  ? 'text-red-500 font-semibold' 
+                  : content.length > COMMENT_MAX_LENGTH * 0.75 
+                    ? 'text-yellow-500' 
+                    : 'text-muted-foreground'
+              }`}>
+                {content.length} / {COMMENT_MAX_LENGTH} characters
+              </span>
+              {content.length > COMMENT_MAX_LENGTH * 0.9 && (
+                <span className="text-red-500 text-xs">
+                  {COMMENT_MAX_LENGTH - content.length} remaining
+                </span>
+              )}
+            </div>
+          </div>
+          <Button 
+            type="submit" 
+            disabled={loading || !content.trim() || content.length > COMMENT_MAX_LENGTH}
+          >
             {loading ? "Posting..." : "Post Comment"}
           </Button>
         </form>

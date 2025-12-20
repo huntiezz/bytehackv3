@@ -274,8 +274,19 @@ export default async function ForumPage({
                 )}
               </div>
             ) : (
-              sections.map((section) => (
-                <div key={section.id} className="bg-[#050505] border border-white/5 rounded-[40px] p-8">
+              sections.map((section, index) => (
+                <div key={section.id}>
+                  {/* Add "Back to home" link above first section */}
+                  {index === 0 && (
+                    <div className="mb-6 flex items-center justify-between">
+                      <Link href="/" className="text-sm text-white/50 hover:text-white transition-colors font-medium flex items-center gap-2">
+                        ← Back to home
+                      </Link>
+                      <NewPostButton />
+                    </div>
+                  )}
+                  
+                  <div className="bg-[#050505] border border-white/5 rounded-[40px] p-8 mb-8">
                   {/* Category Header */}
                   <div className="mb-6">
                     <div className="flex items-center justify-between mb-2">
@@ -367,18 +378,13 @@ export default async function ForumPage({
                     </Link>
                   </div>
                 </div>
-              ))
+              </div>
+            ))
             )}
           </div>
 
           {/* Right Sidebar */}
           <div className="w-full lg:w-[380px] flex-shrink-0 space-y-6">
-
-            {/* New Post CTA */}
-            <div className="bg-[#050505] border border-white/5 p-6 rounded-[32px] flex items-center justify-between gap-4">
-              <div className="text-white font-bold text-sm">Have something to share?</div>
-              <NewPostButton />
-            </div>
 
             {/* Site Stats */}
             <div className="bg-[#050505] border border-white/5 p-8 rounded-[32px]">
