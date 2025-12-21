@@ -85,7 +85,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
 
     const activities = [
         ...(recentPosts || []).map((p: any) => ({
-            type: 'post',
+            type: 'post' as const,
             id: p.id,
             date: new Date(p.created_at),
             content: p.title,
@@ -96,7 +96,7 @@ export default async function ProfilePage({ params }: ProfilePageProps) {
             category: p.category || 'General'
         })),
         ...(recentComments || []).map((c: any) => ({
-            type: 'comment',
+            type: 'comment' as const,
             id: c.id,
             date: new Date(c.created_at),
             content: c.body,
