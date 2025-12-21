@@ -24,13 +24,12 @@ async function checkInvites() {
     const { data, error } = await supabase
         .from('invite_codes')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
+        .ilike('code', '%TEST%');
 
     if (error) {
         console.error('Error fetching invites:', error);
     } else {
-        console.log('Recent Invite Codes:', JSON.stringify(data, null, 2));
+        console.log('Invite Search Result:', JSON.stringify(data, null, 2));
     }
 }
 

@@ -14,13 +14,14 @@ export async function POST(req: Request) {
 
         // Check for IP Blacklist
         // We need a supabase client with service role to check global blacklist
-        if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\"/g, '');
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.replace(/\"/g, '');
+
+        if (!supabaseUrl || !serviceKey) {
             return NextResponse.json({ error: "Service configuration error" }, { status: 503 });
         }
-        const supabaseAdmin = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY
-        );
+
+        const supabaseAdmin = createClient(supabaseUrl, serviceKey);
 
         const { data: ipBan } = await supabaseAdmin
             .from('ip_blacklist')
@@ -39,24 +40,23 @@ export async function POST(req: Request) {
         }
 
         const inputInviteCode = inviteCode?.trim().toUpperCase();
-        console.log(`[Register Debug] Searching for code: ${inputInviteCode}`);
+        console.log(`[Register Debug] Searching for code: '${inputInviteCode}'`);
 
         const { data: codeDataArray, error: codeError } = await supabaseAdmin
             .from("invite_codes")
             .select("*")
-            .eq("code", inputInviteCode)
+            .ilike("code", inputInviteCode)
             .limit(1);
 
         if (codeError) {
-            console.error("[Register Debug] Error fetching code:", codeError);
-        } else {
-            console.log("[Register Debug] Code result:", codeDataArray);
+            console.error("[Register Debug] Error fetching code:", JSON.stringify(codeError));
         }
 
         if (codeError || !codeDataArray?.[0]) {
-            console.error(`[Register] Validation failed for code: ${inputInviteCode}`);
+            console.error(`[Register] Validation failed for code: '${inputInviteCode}'. Data:`, codeDataArray);
             return NextResponse.json({
-                error: `Invalid invite code: ${inputInviteCode}`
+                error: `Invalid invite code: ${inputInviteCode}`,
+                debug: codeError ? codeError.message : "Not found in DB"
             }, { status: 400 });
         }
 
