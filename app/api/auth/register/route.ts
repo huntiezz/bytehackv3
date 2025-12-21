@@ -39,17 +39,25 @@ export async function POST(req: Request) {
         }
 
         const inputInviteCode = inviteCode?.trim().toUpperCase();
-
-
+        console.log(`[Register Debug] Searching for code: ${inputInviteCode}`);
 
         const { data: codeDataArray, error: codeError } = await supabaseAdmin
             .from("invite_codes")
             .select("*")
-            .ilike("code", inputInviteCode)
+            .eq("code", inputInviteCode)
             .limit(1);
 
+        if (codeError) {
+            console.error("[Register Debug] Error fetching code:", codeError);
+        } else {
+            console.log("[Register Debug] Code result:", codeDataArray);
+        }
+
         if (codeError || !codeDataArray?.[0]) {
-            return NextResponse.json({ error: "Invalid invite code" }, { status: 400 });
+            console.error(`[Register] Validation failed for code: ${inputInviteCode}`);
+            return NextResponse.json({
+                error: `Invalid invite code: ${inputInviteCode}`
+            }, { status: 400 });
         }
 
         const codeData = codeDataArray[0];
