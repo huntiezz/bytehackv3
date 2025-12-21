@@ -14,20 +14,27 @@ export async function POST(req: Request) {
 
         // Check for IP Blacklist
         // We need a supabase client with service role to check global blacklist
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\"/g, '');
-        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.replace(/\"/g, '');
+        const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\"/g, "").trim();
+        const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").replace(/\"/g, "").trim();
+
+        console.log(`[Register] Supabase URL present: ${!!supabaseUrl}, Service Key present: ${!!serviceKey}`);
 
         if (!supabaseUrl || !serviceKey) {
+            console.error("[Register] Service configuration missing variables");
             return NextResponse.json({ error: "Service configuration error" }, { status: 503 });
         }
 
         const supabaseAdmin = createClient(supabaseUrl, serviceKey);
 
-        const { data: ipBan } = await supabaseAdmin
+        const { data: ipBan, error: ipCheckError } = await supabaseAdmin
             .from('ip_blacklist')
             .select('reason')
             .eq('ip_address', ip)
             .maybeSingle();
+
+        if (ipCheckError) {
+            console.error("[Register] IP Check Error (Service Key might be invalid):", ipCheckError.message);
+        }
 
         if (ipBan) {
             return NextResponse.json({ error: "This IP address is blacklisted." }, { status: 403 });
@@ -53,10 +60,16 @@ export async function POST(req: Request) {
         }
 
         if (codeError || !codeDataArray?.[0]) {
-            console.error(`[Register] Validation failed for code: '${inputInviteCode}'. Data:`, codeDataArray);
+            // DEEP DEBUG: List what we CAN see
+            const { data: allCodes } = await supabaseAdmin.from("invite_codes").select("code").limit(10);
+            const foundCodes = allCodes?.map(c => c.code) || [];
+
+            console.error(`[Register] Validation failed for code: '${inputInviteCode}'. Reachable:`, foundCodes);
+
             return NextResponse.json({
                 error: `Invalid invite code: ${inputInviteCode}`,
-                debug: codeError ? codeError.message : "Not found in DB"
+                debug: codeError ? codeError.message : "Not found in DB",
+                reachable_codes: foundCodes
             }, { status: 400 });
         }
 
