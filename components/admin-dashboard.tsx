@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, MessageSquare, ShoppingBag, Code2, Shield, Lock, Ticket, Download, Activity, Pin, Trash, Bell } from "lucide-react";
+import { Users, MessageSquare, ShoppingBag, Code2, Shield, Lock, Ticket, Download, Activity, Pin, Trash, Bell, Gift } from "lucide-react";
 import { AdminDownloadsManager } from "@/components/admin-downloads-manager";
 import { InviteCodesManager } from "@/components/invite-codes-manager";
+import { AdminChristmasManager } from "@/components/admin-christmas-manager";
 import { AdminUserEditSheet } from "@/components/admin-user-edit-sheet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -195,6 +196,13 @@ export function AdminDashboard({
                             >
                                 <Download className="w-4 h-4 mr-3" />
                                 Downloads
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="christmas"
+                                className="w-full justify-start px-6 py-4 text-sm font-medium text-white/50 data-[state=active]:text-white data-[state=active]:bg-[#111] rounded-[16px] border border-transparent data-[state=active]:border-white/5 transition-all"
+                            >
+                                <Gift className="w-4 h-4 mr-3" />
+                                Christmas
                             </TabsTrigger>
                         </TabsList>
                     </aside>
@@ -472,6 +480,10 @@ export function AdminDashboard({
 
                         <TabsContent value="downloads" className="space-y-8 animate-in fade-in-50 duration-500">
                             <AdminDownloadsManager uploads={uploads || []} />
+                        </TabsContent>
+
+                        <TabsContent value="christmas" className="space-y-8 animate-in fade-in-50 duration-500">
+                            <AdminChristmasManager />
                         </TabsContent>
 
                     </main>

@@ -27,6 +27,22 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
     }
   );
 
+  // Check Global Killswitch
+  const { data: settings } = await supabase
+    .from('christmas_settings')
+    .select('is_enabled')
+    .single();
+
+  if (settings && !settings.is_enabled && !forceWin) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono flex-col gap-4 select-none">
+        <div className="text-6xl mb-4">🎄🚫</div>
+        <h1 className="text-3xl font-bold text-red-500 uppercase tracking-widest">Event Disabled</h1>
+        <p className="text-white/60">This holiday event has been disabled by the administrator.</p>
+      </div>
+    );
+  }
+
   let inviteCode: string | null = null;
 
   const headersList = await headers();

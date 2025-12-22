@@ -22,6 +22,16 @@ export async function POST(req: Request) {
             }
         );
 
+        // Global Killswitch Check
+        const { data: settings } = await supabase
+            .from('christmas_settings')
+            .select('is_enabled')
+            .single();
+
+        if (settings && !settings.is_enabled && !forceWin) {
+            return NextResponse.json({ error: "Event Disabled" }, { status: 403 });
+        }
+
         const headersList = await headers();
         const ip = headersList.get("x-forwarded-for") || "unknown";
 
