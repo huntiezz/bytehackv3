@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
+    "@fingerprintjs/fingerprintjs": "^5.0.1",
     "@marsidev/react-turnstile": "^1.4.0",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-alert-dialog": "^1.1.15",

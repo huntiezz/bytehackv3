@@ -15,8 +15,14 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
     const sceneRef = useRef<HTMLDivElement>(null);
     const [started, setStarted] = useState(initialRevealed);
     const [snowParticles, setSnowParticles] = useState<{ x: number; y: number; r: number; o: number }[]>([]);
+
+    // Internal state for the code - allows us to update it after API call
+    const [internalInviteCode, setInternalInviteCode] = useState<string | null>(inviteCode);
+
+    // Copy button state
     const [showCopyBtn, setShowCopyBtn] = useState(initialRevealed && !!inviteCode);
     const [copied, setCopied] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         setSnowParticles(
@@ -28,6 +34,36 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
             }))
         );
     }, []);
+
+    const getFingerprint = () => {
+        if (typeof window === 'undefined') return 'server';
+        try {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return 'no-canvas-' + Math.random();
+
+            ctx.textBaseline = "top";
+            ctx.font = "14px 'Arial'";
+            ctx.textBaseline = "alphabetic";
+            ctx.fillStyle = "#f60";
+            ctx.fillRect(125, 1, 62, 20);
+            ctx.fillStyle = "#069";
+            ctx.fillText("ChristmasEvent2024", 2, 15);
+            ctx.fillStyle = "rgba(102, 204, 0, 0.7)";
+            ctx.fillText("ChristmasEvent2024", 4, 17);
+
+            const b64 = canvas.toDataURL();
+            let hash = 0;
+            for (let i = 0; i < b64.length; i++) {
+                const char = b64.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return hash.toString() + "-" + (navigator.userAgent || '').replace(/\D+/g, '').slice(0, 10);
+        } catch (e) {
+            return "error-" + Math.random();
+        }
+    };
 
     useEffect(() => {
         if (!sceneRef.current) return;
@@ -50,6 +86,7 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
 
         function startScene() {
             setStarted(true);
+            setLoading(false);
 
             //Letters intro
             for (let i = 0; i < letters.length; i++) {
@@ -62,19 +99,58 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
             copyAnim();
         }
 
-        const openBox = () => {
+        const openBox = async () => {
             const gift = document.querySelector(".gift");
             if (gift) gift.removeEventListener("click", openBox);
 
+            // Start animations immediately (Hide hat, move box)
             gsap.set(".hat", { transformOrigin: "left bottom" });
             gsap.to(".hat", { duration: 1, rotationZ: -80, x: -500, opacity: 0, ease: "power2.in" });
             gsap.to(".box", { duration: 1, y: 800, ease: "power2.in" });
 
+            // Fade out container
             gsap.to(".gift", {
                 duration: 1,
                 opacity: 0,
                 delay: 1,
-                onStart: function () { startScene(); },
+                onStart: function () {
+                    (async () => {
+                        // While animation plays, fetch result
+                        setLoading(true);
+
+                        const params = new URLSearchParams(window.location.search);
+                        const forceWin = params.get('force_win') === 'true';
+
+                        let fpId = 'unknown';
+                        try {
+                            const fp = await import('@fingerprintjs/fingerprintjs');
+                            const agent = await fp.load();
+                            const result = await agent.get();
+                            fpId = result.visitorId;
+                        } catch (e) {
+                            console.error("FP Load Error", e);
+                            fpId = "fallback-" + Math.random();
+                        }
+
+                        try {
+                            const res = await fetch('/api/christmas/attempt', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ fingerprint: fpId, forceWin })
+                            });
+                            const data = await res.json();
+
+                            if (data.inviteCode) {
+                                setInternalInviteCode(data.inviteCode);
+                            }
+                        } catch (e) {
+                            console.error("Attempt failed", e);
+                        }
+
+                        // Wait for React re-render of result text
+                        setTimeout(() => startScene(), 100);
+                    })();
+                },
                 onComplete: function () {
                     const g = document.querySelector(".gift");
                     if (g) g.classList.add("hidden");
@@ -97,12 +173,18 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
                 stagger: 0.1,
                 onComplete: () => {
                     startAnimations();
-                    if (inviteCode) setShowCopyBtn(true);
+                    // Check logic: we need to access latest state or verify if code exists
+                    // We can't access updated internalInviteCode here easily due to closure
+                    // Just set timeout to show button
+                    setTimeout(() => {
+                        const hasCode = document.querySelector("#letters text")?.textContent?.includes("INVITE");
+                        if (hasCode) setShowCopyBtn(true);
+                    }, 500);
                 }
             });
         }
 
-        // Setup triggers
+        // Setup triggers (add listener)
         const giftBtn = document.querySelector(".gift");
         if (giftBtn) giftBtn.addEventListener("click", openBox);
 
@@ -112,7 +194,7 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
         return () => {
             if (giftBtn) giftBtn.removeEventListener("click", openBox);
         }
-    }, [inviteCode]);
+    }, [initialRevealed]); // Removed inviteCode dep to allow internal updates
 
     return (
         <div ref={sceneRef} className="relative w-full h-full min-h-[500px] select-none">
@@ -141,24 +223,12 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
                     ))}
                 </g>
 
-                {/* Ski Lift - Removed */}
-
-                {/* Mountains/Ground Hills - Removed */}
-
-                {/* Houses - Removed */}
-
-                {/* Penguins - Removed */}
-
-                {/* Characters - Removed */}
-
-                {/* Hanging Letters - Removed */}
-
                 {/* Result Area: Code or Coal */}
                 <g id="letters" transform="translate(800, 300)" textAnchor="middle" opacity="0">
-                    {inviteCode ? (
+                    {internalInviteCode ? (
                         <g>
                             <text x="0" y="0" fill="#15803d" className="drop-shadow-md">INVITE CODE:</text>
-                            <text x="0" y="80" fill="#16a34a" fontSize="100" fontWeight="bold" style={{ filter: 'drop-shadow(0px 4px 4px rgba(0,0,0,0.25))' }}>{inviteCode}</text>
+                            <text x="0" y="80" fill="#16a34a" fontSize="100" fontWeight="bold" style={{ filter: 'drop-shadow(0px 4px 4px rgba(0,0,0,0.25))' }}>{internalInviteCode}</text>
                         </g>
                     ) : (
                         <g>
@@ -172,11 +242,9 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
                         </g>
                     )}
                 </g>
-
-                {/* Interaction Overlays - Removed */}
             </svg>
 
-            {/* Gift Box Overlay (Unchanged) */}
+            {/* Gift Box Overlay */}
             <div className="gift absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 cursor-pointer z-50 transition-transform hover:scale-105 active:scale-95">
                 <div className="hat w-32 h-10 bg-red-600 relative top-0 z-10 shadow-lg border-b-4 border-red-800 rounded-sm">
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-yellow-400 rounded-full shadow-sm"></div>
@@ -189,11 +257,11 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
             </div>
 
             {/* Copy Button Overlay */}
-            {inviteCode && showCopyBtn && (
+            {internalInviteCode && showCopyBtn && (
                 <div className="absolute top-[60%] left-1/2 -translate-x-1/2 -translate-y-1/2 animate-in fade-in zoom-in duration-1000 fill-mode-forwards opacity-0" style={{ animationDelay: '0.5s', animationFillMode: 'forwards' }}>
                     <button
                         onClick={() => {
-                            if (inviteCode) navigator.clipboard.writeText(inviteCode);
+                            if (internalInviteCode) navigator.clipboard.writeText(internalInviteCode);
                             setCopied(true);
                             setTimeout(() => setCopied(false), 2000);
                         }}
