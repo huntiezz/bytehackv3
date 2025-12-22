@@ -9,26 +9,22 @@ export async function GET(
     const { id: userId } = await params;
     const supabase = await createClient();
 
-    // Get date from 365 days ago
     const oneYearAgo = new Date();
     oneYearAgo.setDate(oneYearAgo.getDate() - 365);
     const oneYearAgoStr = oneYearAgo.toISOString();
 
-    // Fetch posts
     const { data: posts } = await supabase
       .from("threads")
       .select("created_at")
       .eq("author_id", userId)
       .gte("created_at", oneYearAgoStr);
 
-    // Fetch comments
     const { data: comments } = await supabase
       .from("thread_replies")
       .select("created_at")
       .eq("author_id", userId)
       .gte("created_at", oneYearAgoStr);
 
-    // Group by date
     const activityMap = new Map<string, { posts: number; comments: number }>();
 
     posts?.forEach((post) => {
@@ -45,7 +41,6 @@ export async function GET(
       activityMap.set(date, current);
     });
 
-    // Convert to array
     const activity = Array.from(activityMap.entries()).map(([date, data]) => ({
       date,
       count: data.posts + data.comments,
@@ -64,4 +59,3 @@ export async function GET(
     return NextResponse.json({ error: "Failed to fetch activity" }, { status: 500 });
   }
 }
-

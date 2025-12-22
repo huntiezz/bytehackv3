@@ -11,16 +11,15 @@ import { Upload, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { uploadFile } from "@/lib/upload-file";
 
-// Validation rules (must match backend)
 const VALIDATION_RULES = {
   USERNAME: {
     MAX_LENGTH: 14,
     MIN_LENGTH: 3,
-    PATTERN: /^[a-zA-Z0-9._-]+$/, // No spaces
+    PATTERN: /^[a-zA-Z0-9._-]+$/,
   },
   DISPLAY_NAME: {
     MAX_LENGTH: 14,
-    PATTERN: /^[a-zA-Z0-9._\- ]+$/, // Can have spaces
+    PATTERN: /^[a-zA-Z0-9._\- ]+$/,
     MAX_SPACES: 1,
   },
   BIO: {
@@ -55,19 +54,15 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // Handle username change with validation
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    
-    // Block spaces immediately
+
     if (newValue.includes(' ')) {
       toast.error('Username cannot contain spaces');
       return;
     }
 
-    // Enforce max length
     if (newValue.length <= VALIDATION_RULES.USERNAME.MAX_LENGTH) {
-      // Only allow valid characters
       if (newValue === '' || VALIDATION_RULES.USERNAME.PATTERN.test(newValue)) {
         setUsername(newValue);
       } else {
@@ -78,26 +73,21 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
     }
   };
 
-  // Handle display name change with validation
   const handleDisplayNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
 
-    // Check for multiple consecutive spaces
     if (/\s{2,}/.test(newValue)) {
       toast.error('No multiple spaces allowed');
       return;
     }
 
-    // Count spaces
     const spaceCount = (newValue.match(/ /g) || []).length;
     if (spaceCount > VALIDATION_RULES.DISPLAY_NAME.MAX_SPACES) {
       toast.error(`Display name can have maximum ${VALIDATION_RULES.DISPLAY_NAME.MAX_SPACES} space`);
       return;
     }
 
-    // Enforce max length
     if (newValue.length <= VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH) {
-      // Only allow valid characters
       if (newValue === '' || VALIDATION_RULES.DISPLAY_NAME.PATTERN.test(newValue)) {
         setDisplayName(newValue);
       } else {
@@ -108,10 +98,9 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
     }
   };
 
-  // Handle bio change with validation
   const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
-    
+
     if (newValue.length <= VALIDATION_RULES.BIO.MAX_LENGTH) {
       setBio(newValue);
     } else {
@@ -138,8 +127,7 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Frontend validation before submit
+
     if (username.trim().length < VALIDATION_RULES.USERNAME.MIN_LENGTH) {
       toast.error(`Username must be at least ${VALIDATION_RULES.USERNAME.MIN_LENGTH} characters`);
       return;
@@ -159,7 +147,7 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
       toast.error(`Bio cannot exceed ${VALIDATION_RULES.BIO.MAX_LENGTH} characters`);
       return;
     }
-    
+
     setLoading(true);
 
     try {
@@ -215,10 +203,8 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-12">
 
-      {/* Visual Header Section */}
       <div className="relative mb-24">
 
-        {/* Banner */}
         <div className="group relative w-full h-[280px] rounded-3xl overflow-hidden bg-zinc-900 border border-zinc-800">
           {bannerPreview ? (
             <Image src={bannerPreview} alt="Banner" fill className="object-cover transition-opacity group-hover:opacity-50" />
@@ -238,7 +224,6 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
           />
         </div>
 
-        {/* Avatar - Overlapping */}
         <div className="absolute -bottom-16 left-10">
           <div className="group relative w-[136px] h-[136px] rounded-full ring-[6px] ring-black bg-zinc-800 overflow-hidden">
             {previewUrl ? (
@@ -264,20 +249,17 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
       </div>
 
 
-      {/* Main Fields Container */}
       <div className="space-y-8 max-w-3xl mx-auto lg:mx-0 lg:pl-4">
 
-        {/* Username */}
         <div className="space-y-3">
           <div className="flex justify-between items-end px-1">
             <label className="text-sm font-semibold text-zinc-400">Username</label>
-            <span className={`text-xs ${
-              username.length > VALIDATION_RULES.USERNAME.MAX_LENGTH * 0.9 
-                ? 'text-red-500 font-semibold' 
-                : username.length > VALIDATION_RULES.USERNAME.MAX_LENGTH * 0.75 
-                  ? 'text-yellow-500' 
+            <span className={`text-xs ${username.length > VALIDATION_RULES.USERNAME.MAX_LENGTH * 0.9
+                ? 'text-red-500 font-semibold'
+                : username.length > VALIDATION_RULES.USERNAME.MAX_LENGTH * 0.75
+                  ? 'text-yellow-500'
                   : 'text-zinc-500'
-            }`}>
+              }`}>
               {username.length}/{VALIDATION_RULES.USERNAME.MAX_LENGTH}
             </span>
           </div>
@@ -293,17 +275,15 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
           </p>
         </div>
 
-        {/* Display Name */}
         <div className="space-y-3">
           <div className="flex justify-between items-end px-1">
             <label className="text-sm font-semibold text-zinc-400">Display Name</label>
-            <span className={`text-xs ${
-              displayName.length > VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH * 0.9 
-                ? 'text-red-500 font-semibold' 
-                : displayName.length > VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH * 0.75 
-                  ? 'text-yellow-500' 
+            <span className={`text-xs ${displayName.length > VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH * 0.9
+                ? 'text-red-500 font-semibold'
+                : displayName.length > VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH * 0.75
+                  ? 'text-yellow-500'
                   : 'text-zinc-500'
-            }`}>
+              }`}>
               {displayName.length}/{VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH}
             </span>
           </div>
@@ -319,17 +299,15 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
           </p>
         </div>
 
-        {/* Bio */}
         <div className="space-y-3">
           <div className="flex justify-between px-1">
             <label className="text-sm font-semibold text-zinc-400">Bio</label>
-            <span className={`text-xs ${
-              bio.length > VALIDATION_RULES.BIO.MAX_LENGTH * 0.9 
-                ? 'text-red-500 font-semibold' 
-                : bio.length > VALIDATION_RULES.BIO.MAX_LENGTH * 0.75 
-                  ? 'text-yellow-500' 
+            <span className={`text-xs ${bio.length > VALIDATION_RULES.BIO.MAX_LENGTH * 0.9
+                ? 'text-red-500 font-semibold'
+                : bio.length > VALIDATION_RULES.BIO.MAX_LENGTH * 0.75
+                  ? 'text-yellow-500'
                   : 'text-zinc-500'
-            }`}>
+              }`}>
               {bio.length}/{VALIDATION_RULES.BIO.MAX_LENGTH}
             </span>
           </div>
@@ -342,11 +320,9 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
           />
         </div>
 
-        {/* Security / Password placeholder (assuming separate flow or modal, but UI shown in ref) */}
         <div className="pt-8 border-t border-zinc-900/50 space-y-6">
           <h3 className="text-lg font-semibold text-white ml-1">Security</h3>
-          
-          {/* Email in Security */}
+
           <div className="space-y-3">
             <label className="text-sm font-semibold text-zinc-400 ml-1">Email</label>
             <Input

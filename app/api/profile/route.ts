@@ -3,17 +3,16 @@ import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 import { sanitizeInput } from "@/lib/security";
 
-// Validation constants
 const VALIDATION_RULES = {
   USERNAME: {
     MIN_LENGTH: 3,
-    MAX_LENGTH: 14, // Changed from 15 to 14
-    PATTERN: /^[a-zA-Z0-9._-]+$/, // Letters, numbers, dots, underscores, hyphens only (NO SPACES)
+    MAX_LENGTH: 14,
+    PATTERN: /^[a-zA-Z0-9._-]+$/,
   },
   DISPLAY_NAME: {
-    MAX_LENGTH: 14, // Changed from 20 to 14
-    PATTERN: /^[a-zA-Z0-9._\- ]+$/, // Letters, numbers, dots, underscores, hyphens, and single spaces
-    MAX_SPACES: 1, // Maximum 1 space allowed
+    MAX_LENGTH: 14,
+    PATTERN: /^[a-zA-Z0-9._\- ]+$/,
+    MAX_SPACES: 1,
   },
   BIO: {
     MAX_LENGTH: 500,
@@ -43,47 +42,41 @@ export async function PATCH(req: Request) {
       updated_at: new Date().toISOString(),
     };
 
-    // ===== USERNAME VALIDATION =====
     if (username !== undefined) {
       const trimmedUsername = username.trim();
 
-      // Check for spaces (NOT ALLOWED)
       if (trimmedUsername.includes(' ')) {
-        return NextResponse.json({ 
-          error: "Username cannot contain spaces. Use only letters, numbers, dots (.), underscores (_), or hyphens (-)." 
+        return NextResponse.json({
+          error: "Username cannot contain spaces. Use only letters, numbers, dots (.), underscores (_), or hyphens (-)."
         }, { status: 400 });
       }
 
-      // Check pattern - only letters, numbers, dots, underscores, hyphens
       if (!VALIDATION_RULES.USERNAME.PATTERN.test(trimmedUsername)) {
-        return NextResponse.json({ 
-          error: "Username can only contain letters, numbers, dots (.), underscores (_), and hyphens (-)." 
+        return NextResponse.json({
+          error: "Username can only contain letters, numbers, dots (.), underscores (_), and hyphens (-)."
         }, { status: 400 });
       }
 
-      // Check length (CRITICAL: Prevents Burp Suite bypass)
       if (trimmedUsername.length < VALIDATION_RULES.USERNAME.MIN_LENGTH) {
-        return NextResponse.json({ 
-          error: `Username must be at least ${VALIDATION_RULES.USERNAME.MIN_LENGTH} characters.` 
+        return NextResponse.json({
+          error: `Username must be at least ${VALIDATION_RULES.USERNAME.MIN_LENGTH} characters.`
         }, { status: 400 });
       }
 
       if (trimmedUsername.length > VALIDATION_RULES.USERNAME.MAX_LENGTH) {
-        return NextResponse.json({ 
-          error: `Username cannot exceed ${VALIDATION_RULES.USERNAME.MAX_LENGTH} characters. Current length: ${trimmedUsername.length}` 
+        return NextResponse.json({
+          error: `Username cannot exceed ${VALIDATION_RULES.USERNAME.MAX_LENGTH} characters. Current length: ${trimmedUsername.length}`
         }, { status: 400 });
       }
 
-      // Extra protection against bypass attempts
       if (username.length > VALIDATION_RULES.USERNAME.MAX_LENGTH + 10) {
-        return NextResponse.json({ 
-          error: "Invalid request - username too large" 
+        return NextResponse.json({
+          error: "Invalid request - username too large"
         }, { status: 400 });
       }
 
       const supabase = await createClient();
-      
-      // Check if username is actually changing
+
       if (trimmedUsername.toLowerCase() !== user.username?.toLowerCase()) {
         const reservedUsernames = ['admin', 'moderator', 'system', 'root', 'support', 'help', 'bot', 'api', 'forum', 'profile'];
         if (reservedUsernames.includes(trimmedUsername.toLowerCase())) {
@@ -124,8 +117,8 @@ export async function PATCH(req: Request) {
         if (newCount >= 2) {
           if (lastChange && lastChange > sevenDaysAgo) {
             const daysSinceLast = Math.ceil((Date.now() - lastChange.getTime()) / (1000 * 60 * 60 * 24));
-            return NextResponse.json({ 
-              error: `You can only change your username 2 times per 7 days. Please try again in ${7 - daysSinceLast} days.` 
+            return NextResponse.json({
+              error: `You can only change your username 2 times per 7 days. Please try again in ${7 - daysSinceLast} days.`
             }, { status: 400 });
           } else {
             newCount = 0;
@@ -139,72 +132,61 @@ export async function PATCH(req: Request) {
       updateData.username = trimmedUsername.toLowerCase();
     }
 
-    // ===== DISPLAY NAME VALIDATION =====
     if (display_name !== undefined) {
       const trimmedDisplayName = display_name.trim();
 
-      // Check pattern
       if (!VALIDATION_RULES.DISPLAY_NAME.PATTERN.test(trimmedDisplayName)) {
-        return NextResponse.json({ 
-          error: "Display name can only contain letters, numbers, dots (.), underscores (_), hyphens (-), and spaces." 
+        return NextResponse.json({
+          error: "Display name can only contain letters, numbers, dots (.), underscores (_), hyphens (-), and spaces."
         }, { status: 400 });
       }
 
-      // Check for multiple consecutive spaces
       if (/\s{2,}/.test(trimmedDisplayName)) {
-        return NextResponse.json({ 
-          error: "Display name cannot contain multiple consecutive spaces." 
+        return NextResponse.json({
+          error: "Display name cannot contain multiple consecutive spaces."
         }, { status: 400 });
       }
 
-      // Count spaces
       const spaceCount = (trimmedDisplayName.match(/ /g) || []).length;
       if (spaceCount > VALIDATION_RULES.DISPLAY_NAME.MAX_SPACES) {
-        return NextResponse.json({ 
-          error: `Display name can contain a maximum of ${VALIDATION_RULES.DISPLAY_NAME.MAX_SPACES} space.` 
+        return NextResponse.json({
+          error: `Display name can contain a maximum of ${VALIDATION_RULES.DISPLAY_NAME.MAX_SPACES} space.`
         }, { status: 400 });
       }
 
-      // Check length (CRITICAL: Prevents Burp Suite bypass)
       if (trimmedDisplayName.length > VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH) {
-        return NextResponse.json({ 
-          error: `Display name cannot exceed ${VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH} characters. Current length: ${trimmedDisplayName.length}` 
+        return NextResponse.json({
+          error: `Display name cannot exceed ${VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH} characters. Current length: ${trimmedDisplayName.length}`
         }, { status: 400 });
       }
 
-      // Extra protection against bypass
       if (display_name.length > VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH + 10) {
-        return NextResponse.json({ 
-          error: "Invalid request - display name too large" 
+        return NextResponse.json({
+          error: "Invalid request - display name too large"
         }, { status: 400 });
       }
 
       updateData.display_name = trimmedDisplayName;
     }
 
-    // ===== BIO VALIDATION =====
     if (bio !== undefined) {
       const trimmedBio = bio.trim();
 
-      // Check length (CRITICAL: Prevents Burp Suite bypass)
       if (trimmedBio.length > VALIDATION_RULES.BIO.MAX_LENGTH) {
-        return NextResponse.json({ 
-          error: `Bio cannot exceed ${VALIDATION_RULES.BIO.MAX_LENGTH} characters. Current length: ${trimmedBio.length}` 
+        return NextResponse.json({
+          error: `Bio cannot exceed ${VALIDATION_RULES.BIO.MAX_LENGTH} characters. Current length: ${trimmedBio.length}`
         }, { status: 400 });
       }
 
-      // Extra protection against bypass attempts
       if (bio.length > VALIDATION_RULES.BIO.MAX_LENGTH + 1000) {
-        return NextResponse.json({ 
-          error: "Invalid request - bio too large" 
+        return NextResponse.json({
+          error: "Invalid request - bio too large"
         }, { status: 400 });
       }
 
-      // Sanitize bio to prevent XSS
       updateData.bio = sanitizeInput(trimmedBio);
     }
 
-    // Add other fields if provided
     if (profile_picture !== undefined) updateData.profile_picture = profile_picture;
     if (font_style !== undefined) updateData.font_style = font_style;
     if (name_color !== undefined) updateData.name_color = name_color;
