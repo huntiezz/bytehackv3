@@ -61,7 +61,18 @@ export default async function AdminPage() {
     );
   }
 
-  const supabase = await createClient();
+  // Use Service Role to bypass RLS for admin dashboard data fetching
+  const { createClient: createAdminClient } = await import("@supabase/supabase-js");
+  const supabase = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
 
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
