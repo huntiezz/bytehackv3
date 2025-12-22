@@ -3,25 +3,28 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { rateLimit } from "@/lib/rate-limit";
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: Request) {
     try {
         const ip = req.headers.get("x-forwarded-for") || "unknown";
-        const { success } = await rateLimit(`register:${ip}`, 3, 3600);
+        const { success } = await rateLimit(`register:${ip}`, 5, 3600);
 
         if (!success) {
-            return NextResponse.json({ error: "Too many registration attempts. Please try again in an hour." }, { status: 429 });
+            return NextResponse.json({ error: "Too many registration attempts. Please try again later." }, { status: 429 });
         }
 
-        // Check for IP Blacklist
-        // We need a supabase client with service role to check global blacklist
         const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\"/g, "").trim();
         const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").replace(/\"/g, "").trim();
 
-        console.log(`[Register] Supabase URL present: ${!!supabaseUrl}, Service Key present: ${!!serviceKey}`);
+        const envHealth = {
+            urlStart: supabaseUrl.substring(0, 15),
+            keyLength: serviceKey.length,
+            isServiceRole: serviceKey.includes("service_role") || serviceKey.length > 100
+        };
 
         if (!supabaseUrl || !serviceKey) {
-            console.error("[Register] Service configuration missing variables");
-            return NextResponse.json({ error: "Service configuration error" }, { status: 503 });
+            return NextResponse.json({ error: "Service configuration error", envHealth }, { status: 503 });
         }
 
         const supabaseAdmin = createClient(supabaseUrl, serviceKey);
@@ -60,16 +63,33 @@ export async function POST(req: Request) {
         }
 
         if (codeError || !codeDataArray?.[0]) {
-            // DEEP DEBUG: List what we CAN see
-            const { data: allCodes } = await supabaseAdmin.from("invite_codes").select("code").limit(10);
-            const foundCodes = allCodes?.map(c => c.code) || [];
+            // DEEP DIAGNOSTICS
+            const diag: any = {};
 
-            console.error(`[Register] Validation failed for code: '${inputInviteCode}'. Reachable:`, foundCodes);
+            // 1. Check if we can see ANY codes
+            const { data: allCodes } = await supabaseAdmin.from("invite_codes").select("code").limit(5);
+            diag.reachable_codes = allCodes?.map(c => c.code) || [];
+
+            // 2. Check if we can see profiles (to verify connection health)
+            const { count: profileCount } = await supabaseAdmin.from('profiles').select('*', { count: 'exact', head: true });
+            diag.profileCount = profileCount;
+
+            // 3. Verify exactly what the key is (decode JWT payload)
+            try {
+                const payload = JSON.parse(Buffer.from(serviceKey.split('.')[1], 'base64').toString());
+                diag.keyRole = payload.role;
+                diag.keyProj = payload.ref;
+            } catch (e) {
+                diag.keyRole = "Invalid/Malformed Key";
+            }
+
+            console.error(`[Register] Validation failed. Diag:`, diag);
 
             return NextResponse.json({
                 error: `Invalid invite code: ${inputInviteCode}`,
                 debug: codeError ? codeError.message : "Not found in DB",
-                reachable_codes: foundCodes
+                diag,
+                envHealth
             }, { status: 400 });
         }
 
