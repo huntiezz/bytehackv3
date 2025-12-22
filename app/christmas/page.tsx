@@ -1,5 +1,4 @@
-
-import { createClient } from "@/lib/supabase/server";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { ChristmasScene } from "@/components/christmas-scene";
 import { Metadata } from "next";
 import { headers } from "next/headers";
@@ -12,28 +11,43 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function ChristmasPage() {
-  const supabase = await createClient();
+export default async function ChristmasPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const searchParams = await props.searchParams;
+  const forceWin = searchParams.force_win === 'true';
+
+  // Use Service Role Key to traverse RLS and strictly enforce 1-per-IP
+  const supabase = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    }
+  );
+
   let inviteCode: string | null = null;
 
   const headersList = await headers();
   const ip = headersList.get("x-forwarded-for") || "unknown";
 
   // Check if IP has already attempted
-  // Note: This requires the 'christmas_attempts' table to be created in Supabase
   const { data: existingAttempt } = await supabase
     .from('christmas_attempts')
     .select('id')
     .eq('ip_address', ip)
     .single();
 
-  if (!existingAttempt) {
-    // Record the attempt
-    await supabase.from('christmas_attempts').insert({ ip_address: ip });
+  // Logic: 
+  // 1. If debug (forceWin), always proceed regardless of attempts.
+  // 2. If not debug, strictly require NO existing attempt.
+  if (!existingAttempt || forceWin) {
+    // Try to record attempt. If race condition (already inserted by another req), this might fail or ignore.
+    const { error } = await supabase.from('christmas_attempts').insert({ ip_address: ip });
 
-    // 5% chance to get an invite code
-    const isLucky = Math.random() < 0.05;
-    console.log("Christmas Page: User (IP: " + ip + ") is lucky?", isLucky);
+    const isLucky = Math.random() < 0.05 || forceWin;
+    console.log("Christmas Page: User (IP: " + ip + ") is lucky?", isLucky, "ForceWin:", forceWin);
 
     if (isLucky) {
       // Fetch an unused invite code
