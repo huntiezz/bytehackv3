@@ -16,10 +16,8 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
     const [started, setStarted] = useState(initialRevealed);
     const [snowParticles, setSnowParticles] = useState<{ x: number; y: number; r: number; o: number }[]>([]);
 
-    // Internal state for the code - allows us to update it after API call
     const [internalInviteCode, setInternalInviteCode] = useState<string | null>(inviteCode);
 
-    // Copy button state
     const [showCopyBtn, setShowCopyBtn] = useState(initialRevealed && !!inviteCode);
     const [copied, setCopied] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -71,7 +69,6 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
         const svg = sceneRef.current.querySelector(".scene") as HTMLElement;
         if (!svg) return;
 
-        // Skip animation if already revealed
         if (initialRevealed) {
             svg.style.display = "block";
             const gift = document.querySelector(".gift");
@@ -81,14 +78,12 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
             return;
         }
 
-        // Select letters - result
         const letters = svg.querySelectorAll("#letters > *");
 
         function startScene() {
             setStarted(true);
             setLoading(false);
 
-            //Letters intro
             for (let i = 0; i < letters.length; i++) {
                 gsap.set(letters[i], {
                     transformOrigin: "center top",
@@ -103,19 +98,20 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
             const gift = document.querySelector(".gift");
             if (gift) gift.removeEventListener("click", openBox);
 
-            // Start animations immediately (Hide hat, move box)
+            if (gift) gift.removeEventListener("click", openBox);
+
             gsap.set(".hat", { transformOrigin: "left bottom" });
             gsap.to(".hat", { duration: 1, rotationZ: -80, x: -500, opacity: 0, ease: "power2.in" });
             gsap.to(".box", { duration: 1, y: 800, ease: "power2.in" });
 
-            // Fade out container
+            gsap.to(".box", { duration: 1, y: 800, ease: "power2.in" });
+
             gsap.to(".gift", {
                 duration: 1,
                 opacity: 0,
                 delay: 1,
                 onStart: function () {
                     (async () => {
-                        // While animation plays, fetch result
                         setLoading(true);
 
                         const params = new URLSearchParams(window.location.search);
@@ -147,7 +143,6 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
                             console.error("Attempt failed", e);
                         }
 
-                        // Wait for React re-render of result text
                         setTimeout(() => startScene(), 100);
                     })();
                 },
@@ -158,12 +153,9 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
             });
         };
 
-        function startAnimations() {
-            // Optional loop animations for result can go here
-        }
+        function startAnimations() { }
 
         function copyAnim() {
-            // Reveal the letters container first
             gsap.to(svg.querySelector("#letters"), { duration: 0.1, opacity: 1 });
             gsap.to(letters, {
                 duration: 3,
@@ -173,9 +165,6 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
                 stagger: 0.1,
                 onComplete: () => {
                     startAnimations();
-                    // Check logic: we need to access latest state or verify if code exists
-                    // We can't access updated internalInviteCode here easily due to closure
-                    // Just set timeout to show button
                     setTimeout(() => {
                         const hasCode = document.querySelector("#letters text")?.textContent?.includes("INVITE");
                         if (hasCode) setShowCopyBtn(true);
@@ -184,17 +173,15 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
             });
         }
 
-        // Setup triggers (add listener)
         const giftBtn = document.querySelector(".gift");
         if (giftBtn) giftBtn.addEventListener("click", openBox);
 
-        // Show the scene container
         svg.style.display = "block";
 
         return () => {
             if (giftBtn) giftBtn.removeEventListener("click", openBox);
         }
-    }, [initialRevealed]); // Removed inviteCode dep to allow internal updates
+    }, [initialRevealed]);
 
     return (
         <div ref={sceneRef} className="relative w-full h-full min-h-[500px] select-none">

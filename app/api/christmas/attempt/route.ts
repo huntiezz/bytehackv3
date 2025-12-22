@@ -8,10 +8,6 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { fingerprint } = body;
 
-        // Force Win Debug Check (Passed from client or header?)
-        // Better to check specific header or just rely on random.
-        // The user previously used a URL param ?force_win=true. 
-        // We can pass this in the body too.
         const forceWin = body.forceWin === true;
 
         const supabase = createClient(
@@ -22,7 +18,6 @@ export async function POST(req: Request) {
             }
         );
 
-        // Global Killswitch Check
         const { data: settings } = await supabase
             .from('christmas_settings')
             .select('is_enabled')
@@ -37,10 +32,6 @@ export async function POST(req: Request) {
 
         const cookieStore = await cookies();
         let deviceId = cookieStore.get("bh_device_id")?.value;
-
-        // If no device ID cookie, generating one here won't set it in the browser automatically 
-        // unless we return it in Set-Cookie header.
-        // Middleware handles generation usually.
 
         let query = supabase
             .from('christmas_attempts')
@@ -58,12 +49,10 @@ export async function POST(req: Request) {
             });
         }
 
-        // New Attempt
         const isLucky = Math.random() < 0.05 || forceWin;
         let inviteCode: string | null = null;
 
         if (isLucky) {
-            // Fetch/Create Code Logic
             const { data } = await supabase
                 .from('invite_codes')
                 .select('code')
@@ -73,7 +62,6 @@ export async function POST(req: Request) {
             if (data && data.length > 0) {
                 inviteCode = data[0].code;
             } else {
-                // Auto-create
                 const { data: adminUser } = await supabase
                     .from('profiles')
                     .select('id')
@@ -95,8 +83,6 @@ export async function POST(req: Request) {
             }
         }
 
-        // Verify we aren't creating duplicate if race condition, but we checked above.
-        // Insert new attempt
         if (!existingAttempt) {
             await supabase.from('christmas_attempts').insert({
                 ip_address: ip,

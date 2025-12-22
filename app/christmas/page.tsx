@@ -15,7 +15,6 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
   const searchParams = await props.searchParams;
   const forceWin = searchParams.force_win === 'true';
 
-  // Use Service Role Key to traverse RLS and strictly enforce 1-per-IP
   const supabase = createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -27,7 +26,6 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
     }
   );
 
-  // Check Global Killswitch
   const { data: settings } = await supabase
     .from('christmas_settings')
     .select('is_enabled')
@@ -51,7 +49,6 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
   const cookieStore = await cookies();
   const deviceId = cookieStore.get("bh_device_id")?.value;
 
-  // Check if IP or Device has already attempted
   let query = supabase
     .from('christmas_attempts')
     .select('ip_address, invite_code');
@@ -66,18 +63,11 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
 
   let alreadyRevealed = false;
 
-  // Logic: 
-  // 1. If debug (forceWin), always proceed regardless of attempts.
-  // 2. If not debug, strictly check existing attempt.
-  // Logic: 
-  // 1. If debug (forceWin), always proceed regardless of attempts.
-  // 2. If not debug, strictly check existing attempt.
   if (existingAttempt && !forceWin) {
     console.log("Christmas Page: IP " + ip + " / Device " + deviceId + " already attempted. Code:", existingAttempt.invite_code);
     inviteCode = existingAttempt.invite_code;
     alreadyRevealed = true;
   }
-  // If not existing, we let the client handle the attempt generation via API to support fingerprinting.
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center overflow-hidden">

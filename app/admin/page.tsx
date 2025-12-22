@@ -97,7 +97,7 @@ export default async function AdminPage() {
     supabase.from("threads").select("*", { count: "exact", head: true }),
     supabase.from("offsets").select("*", { count: "exact", head: true }),
     supabase.from("invite_codes").select("*", { count: "exact", head: true }),
-    supabase.from("profiles").select("id, username, display_name, email, created_at, is_admin, role, post_count, reaction_score, avatar_url, last_login, badges, is_banned, discord_id, discord_username, sessions:profile_sessions(ip_address, created_at)").order("created_at", { ascending: false }).then(res => {
+    supabase.from("profiles").select("id, username, display_name, email, created_at, is_admin, role, post_count, reaction_score, avatar_url, last_login, badges, is_banned, discord_id, discord_username").order("created_at", { ascending: false }).then(res => {
       if (res.error) console.error("Admin Page Recent Users Error:", res.error);
       return res;
     }),

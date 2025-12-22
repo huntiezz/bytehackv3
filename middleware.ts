@@ -3,14 +3,10 @@ import { updateSession } from '@/lib/supabase/middleware'
 import { createClient } from '@supabase/supabase-js'
 
 export async function middleware(request: NextRequest) {
-  // console.log("Middleware: Requesting", request.nextUrl.pathname);
   const { supabase, response, user } = await updateSession(request);
 
-  // Check Supabase User first
   if (user) {
-    // console.log("Middleware: User found", user.id);
     try {
-      // Use logic to bypass RLS for ban check to ensure we catch it
       const adminClient = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -40,9 +36,7 @@ export async function middleware(request: NextRequest) {
 
         if (!isExpired) {
           console.log("Middleware: Ban active. Redirecting...");
-          // If accessing auth endpoints, let them pass to allow signout/etc or just block?
-          // If we block everything, they can't sign out easily via UI.
-          // But we redirect to /banned where there is a Sign Out button.
+          console.log("Middleware: Ban active. Redirecting...");
 
           if (!request.nextUrl.pathname.startsWith('/banned') && !request.nextUrl.pathname.startsWith('/api/auth')) {
             const url = request.nextUrl.clone();
@@ -54,7 +48,6 @@ export async function middleware(request: NextRequest) {
           console.log("Middleware: Ban expired");
         }
       } else {
-        // console.log("Middleware: No active ban found");
       }
     } catch (error) {
       console.error("Middleware Supabase ban check failed:", error);
@@ -63,7 +56,6 @@ export async function middleware(request: NextRequest) {
 
 
 
-  // Device ID for rate limiting (Christmas, etc.)
   let deviceId = request.cookies.get('bh_device_id')?.value;
   if (!deviceId) {
     deviceId = crypto.randomUUID();
