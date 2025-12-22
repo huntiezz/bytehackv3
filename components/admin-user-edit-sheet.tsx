@@ -80,7 +80,7 @@ export function AdminUserEditSheet({ user, isOpen, onClose, isCurrentUserAdmin }
     };
 
     const handleBadgeToggle = async (badgeId: string) => {
-        const currentBadges = user.badges || [];
+        const currentBadges = Array.isArray(user.badges) ? user.badges : [];
         let newBadges;
         if (currentBadges.includes(badgeId)) {
             newBadges = currentBadges.filter((b: string) => b !== badgeId);

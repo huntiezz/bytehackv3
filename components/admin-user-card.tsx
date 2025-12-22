@@ -55,7 +55,7 @@ export function AdminUserCard({ user, onInviteToServer, currentUserRole }: UserC
 
   const handleBadgeToggle = async (badgeId: string) => {
     setIsLoading(true);
-    const currentBadges = user.badges || [];
+    const currentBadges = Array.isArray(user.badges) ? user.badges : [];
     let newBadges;
     if (currentBadges.includes(badgeId)) {
       newBadges = currentBadges.filter((b: string) => b !== badgeId);

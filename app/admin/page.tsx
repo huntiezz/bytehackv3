@@ -83,7 +83,7 @@ export default async function AdminPage() {
     supabase.from("threads").select("*", { count: "exact", head: true }),
     supabase.from("offsets").select("*", { count: "exact", head: true }),
     supabase.from("invite_codes").select("*", { count: "exact", head: true }),
-    supabase.from("profiles").select("id, username, display_name, created_at, is_admin, role, post_count, reaction_score, avatar_url").order("created_at", { ascending: false }),
+    supabase.from("profiles").select("id, username, display_name, email, created_at, is_admin, role, post_count, reaction_score, avatar_url, last_login, badges, is_banned, discord_id, discord_username, sessions:profile_sessions(ip_address, created_at)").order("created_at", { ascending: false }),
     supabase.from("threads").select("*, author:profiles!threads_author_id_fkey(username, display_name)").order("created_at", { ascending: false }),
     supabase.from("offsets").select("*, author:profiles!offsets_author_id_fkey(username, display_name)").order("created_at", { ascending: false }).limit(10),
     supabase.from("profiles").select("created_at").gte("created_at", thirtyDaysAgoIso),

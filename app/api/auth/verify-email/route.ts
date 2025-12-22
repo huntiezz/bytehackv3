@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { createClient as createServerClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth";
 
 export async function POST(req: Request) {
@@ -36,16 +37,39 @@ export async function POST(req: Request) {
             .update({ verified_at: new Date().toISOString() })
             .eq("id", verification.id);
 
-        // If user is logged in, update their profile
-        const user = await getCurrentUser();
-        if (user) {
-            await supabaseAdmin
+        // If user is logged in, update their profile and auth email
+        const supabase = await createServerClient();
+        const { data: { user: authUser } } = await supabase.auth.getUser();
+
+        if (authUser) {
+            console.log(`[VerifyEmail] Updating user ${authUser.id} with email ${email}`);
+
+            // Update Auth Email (Critical for future logins)
+            const { error: authUpdateError } = await supabaseAdmin.auth.admin.updateUserById(authUser.id, {
+                email: email,
+                email_confirm: true,
+                user_metadata: { email_verified: true }
+            });
+
+            if (authUpdateError) {
+                console.error("[VerifyEmail] Auth update error:", authUpdateError);
+            }
+
+            // Update Profile
+            const { error: profileUpdateError } = await supabaseAdmin
                 .from("profiles")
                 .update({
                     email: email,
-                    email_verified: true
+                    email_verified: true,
+                    updated_at: new Date().toISOString()
                 })
-                .eq("id", user.id);
+                .eq("id", authUser.id);
+
+            if (profileUpdateError) {
+                console.error("[VerifyEmail] Profile update error:", profileUpdateError);
+            }
+        } else {
+            console.warn("[VerifyEmail] No logged in user found during verification request");
         }
 
         return NextResponse.json({
