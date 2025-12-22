@@ -22,6 +22,8 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
         password: "",
         inviteCode: ""
     });
+    const [verificationCode, setVerificationCode] = useState("");
+    const [isEmailVerified, setIsEmailVerified] = useState(false);
     const [captchaCode, setCaptchaCode] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
@@ -29,7 +31,7 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
         if (step < 3) {
-            setStep(step + 1);
+            nextStep();
             return;
         }
 
@@ -87,11 +89,66 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
         }
     };
 
-    const nextStep = () => {
-        if (step === 1 && (!formData.username || !formData.email)) {
-            toast.error("Please fill in all fields");
+    const nextStep = async () => {
+        if (step === 1) {
+            if (!formData.username || !formData.email || !formData.inviteCode) {
+                toast.error("Please fill in all fields");
+                return;
+            }
+            if (!formData.email.includes("@")) {
+                toast.error("Please enter a valid email");
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const res = await fetch("/api/auth/send-verification", {
+                    method: "POST",
+                    body: JSON.stringify({ email: formData.email })
+                });
+                if (res.ok) {
+                    toast.success("Verification code sent!");
+                    setStep(1.5);
+                } else {
+                    const data = await res.json();
+                    toast.error(data.error || "Failed to send verification code");
+                }
+            } catch (err) {
+                toast.error("Connection error");
+            } finally {
+                setLoading(false);
+            }
             return;
         }
+
+        if (step === 1.5) {
+            if (verificationCode.length < 6) {
+                toast.error("Please enter the 6-digit code");
+                return;
+            }
+
+            setLoading(true);
+            try {
+                const res = await fetch("/api/auth/verify-email", {
+                    method: "POST",
+                    body: JSON.stringify({ email: formData.email, code: verificationCode })
+                });
+                if (res.ok) {
+                    toast.success("Email verified!");
+                    setIsEmailVerified(true);
+                    setStep(2);
+                } else {
+                    const data = await res.json();
+                    toast.error(data.error || "Invalid verification code");
+                }
+            } catch (err) {
+                toast.error("Connection error");
+            } finally {
+                setLoading(false);
+            }
+            return;
+        }
+
         if (step === 2 && !formData.password) {
             toast.error("Please enter a password");
             return;
@@ -155,8 +212,42 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
                                     required
                                 />
                             </div>
-                            <Button type="button" onClick={nextStep} className="w-full">
+                            <Button type="button" onClick={nextStep} className="w-full" disabled={loading}>
+                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                 Continue
+                            </Button>
+                        </motion.div>
+                    )}
+
+                    {step === 1.5 && (
+                        <motion.div
+                            key="step1.5"
+                            initial={{ x: 10, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            exit={{ x: -10, opacity: 0 }}
+                            className="grid gap-4"
+                        >
+                            <div className="grid gap-2 text-center">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="code">Verification Code</Label>
+                                    <button type="button" onClick={goBack} className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1">
+                                        <ArrowLeft className="w-3 h-3" /> Back
+                                    </button>
+                                </div>
+                                <p className="text-sm text-muted-foreground pb-2">We&apos;ve sent a 6-digit code to {formData.email}</p>
+                                <Input
+                                    id="code"
+                                    placeholder="123456"
+                                    value={verificationCode}
+                                    onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                                    className="text-center text-2xl tracking-[0.5em] font-mono"
+                                    autoFocus
+                                    required
+                                />
+                            </div>
+                            <Button type="button" onClick={nextStep} className="w-full" disabled={loading || verificationCode.length < 6}>
+                                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Verify Email
                             </Button>
                         </motion.div>
                     )}

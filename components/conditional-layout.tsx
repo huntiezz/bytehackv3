@@ -4,6 +4,8 @@ import { usePathname } from 'next/navigation';
 import { Navigation } from './navigation';
 import Image from 'next/image';
 
+import { EmailVerificationModal } from './email-verification-modal';
+
 export function ConditionalLayout({
     user,
     isAdmin,
@@ -14,8 +16,6 @@ export function ConditionalLayout({
     isOffsetUpdater: boolean;
 }) {
     const pathname = usePathname();
-
-
 
     return (
         <>
@@ -30,6 +30,12 @@ export function ConditionalLayout({
                 />
             </div>
             <Navigation user={user} isAdmin={isAdmin} isOffsetUpdater={isOffsetUpdater} />
+            {user && (
+                <EmailVerificationModal
+                    userEmail={user.email}
+                    isVerified={user.email_verified}
+                />
+            )}
         </>
     );
 }

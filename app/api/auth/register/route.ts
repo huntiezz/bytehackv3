@@ -113,6 +113,24 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Username already taken" }, { status: 400 });
         }
 
+        // Verify that the email was actually verified (security check)
+        const { data: emailVerifyCheck, error: emailVerifyError } = await supabaseAdmin
+            .from("email_verifications")
+            .select("verified_at")
+            .eq("email", email)
+            .not("verified_at", "is", null)
+            .gt("verified_at", new Date(Date.now() - 3600000).toISOString()) // Verified in last 1 hour
+            .limit(1)
+            .maybeSingle();
+
+        if (emailVerifyError) {
+            console.error("Email verification check error:", emailVerifyError);
+        }
+
+        if (!emailVerifyCheck) {
+            return NextResponse.json({ error: "Email verification required. Please verify your email." }, { status: 400 });
+        }
+
         const { data: userData, error: createError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password,
@@ -147,6 +165,7 @@ export async function POST(req: Request) {
                 username: username.toLowerCase().replace(/\s+/g, '_'),
                 name: username,
                 email: email,
+                email_verified: true,
                 display_name: username,
                 role: 'member',
                 is_admin: false,

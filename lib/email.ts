@@ -102,3 +102,71 @@ export const sendPasswordResetEmail = async (email: string, resetLink: string, d
     return false;
   }
 };
+
+export const sendVerificationEmail = async (email: string, code: string) => {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'ByteHack Security <security@bytehack.net>',
+      to: [email],
+      subject: 'Verify your ByteHack email',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Verify Email</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #000; color: #fff; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; padding: 40px 20px; }
+            .header { text-align: center; margin-bottom: 40px; }
+            .logo { font-size: 24px; font-weight: bold; color: #fff; letter-spacing: 2px; }
+            .content { background-color: #09090b; padding: 40px; border-radius: 12px; border: 1px solid #27272a; text-align: center; }
+            .title { font-size: 24px; font-weight: 600; margin-bottom: 16px; color: #fff; }
+            .text { color: #a1a1aa; font-size: 16px; line-height: 1.6; margin-bottom: 32px; }
+            .code-box { background-color: #18181b; padding: 24px; border-radius: 8px; margin: 32px 0; border: 1px solid #27272a; }
+            .code { font-size: 32px; font-weight: bold; color: #fff; letter-spacing: 8px; font-family: 'Courier New', Courier, monospace; }
+            .footer { margin-top: 40px; text-align: center; color: #52525b; font-size: 12px; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="logo">BYTEHACK</div>
+            </div>
+            <div class="content">
+              <h1 class="title">Verify Your Email</h1>
+              <p class="text">
+                Use the verification code below to confirm your email address. 
+                This code will expire in 15 minutes.
+              </p>
+              
+              <div class="code-box">
+                <div class="code">${code}</div>
+              </div>
+              
+              <p class="text" style="font-size: 14px;">
+                If you didn't request this, you can safely ignore this email.
+              </p>
+            </div>
+            <div class="footer">
+              <p>© ${new Date().getFullYear()} ByteHack. All rights reserved.</p>
+              <p>ByteHack Inc. • 123 Security Blvd</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    });
+
+    if (error) {
+      console.error('Error sending verification email:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Exception sending verification email:', error);
+    return false;
+  }
+};
