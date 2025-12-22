@@ -270,7 +270,7 @@ export function AdminDashboard({
                             </div>
 
                             <div className="bg-[#050505] border border-white/5 rounded-[24px] p-6 text-sm text-white/30 font-bold uppercase tracking-widest flex items-center justify-between">
-                                <span>Showing {((usersPage - 1) * itemsPerPage) + 1}-{Math.min(usersPage * itemsPerPage, filteredUsers.length)} of {filteredUsers.length} Users</span>
+                                <span>Showing {filteredUsers.length > 0 ? ((usersPage - 1) * itemsPerPage) + 1 : 0}-{Math.min(usersPage * itemsPerPage, filteredUsers.length)} of {filteredUsers.length} Users</span>
                                 <div className="flex items-center gap-2">
                                     <Button
                                         size="sm"
