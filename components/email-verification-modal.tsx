@@ -24,7 +24,7 @@ export function EmailVerificationModal({ userEmail, isVerified }: EmailVerificat
     const pathname = usePathname();
 
     useEffect(() => {
-        if (!isVerified && pathname?.startsWith("/forum")) {
+        if (!isVerified && pathname?.startsWith("/forum") && pathname !== "/") {
             setIsOpen(true);
         } else {
             setIsOpen(false);
@@ -94,7 +94,7 @@ export function EmailVerificationModal({ userEmail, isVerified }: EmailVerificat
 
     const handleLogout = async () => {
         try {
-            await fetch("/api/auth/logout", { method: "POST" });
+            await fetch("/api/auth/signout", { method: "POST" });
             window.location.href = "/login";
         } catch (error) {
             console.error("Logout failed", error);
