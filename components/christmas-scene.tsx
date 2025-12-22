@@ -11,6 +11,18 @@ interface ChristmasSceneProps {
 export function ChristmasScene({ inviteCode }: ChristmasSceneProps) {
     const sceneRef = useRef<HTMLDivElement>(null);
     const [started, setStarted] = useState(false);
+    const [snowParticles, setSnowParticles] = useState<{ x: number; y: number; r: number; o: number }[]>([]);
+
+    useEffect(() => {
+        setSnowParticles(
+            Array.from({ length: 100 }).map(() => ({
+                x: Math.random() * 1600,
+                y: Math.random() * 900,
+                r: Math.random() * 3 + 1,
+                o: Math.random() * 0.8,
+            }))
+        );
+    }, []);
 
     useEffect(() => {
         if (!sceneRef.current) return;
@@ -99,8 +111,8 @@ export function ChristmasScene({ inviteCode }: ChristmasSceneProps) {
 
                 {/* Stars / Distant Snow */}
                 <g id="snow">
-                    {Array.from({ length: 100 }).map((_, i) => (
-                        <circle key={i} cx={Math.random() * 1600} cy={Math.random() * 900} r={Math.random() * 3 + 1} fill="white" opacity={Math.random() * 0.8} />
+                    {snowParticles.map((p, i) => (
+                        <circle key={i} cx={p.x} cy={p.y} r={p.r} fill="white" opacity={p.o} />
                     ))}
                 </g>
 
