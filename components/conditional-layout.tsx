@@ -5,6 +5,7 @@ import { Navigation } from './navigation';
 import Image from 'next/image';
 
 import { EmailVerificationModal } from './email-verification-modal';
+import { ChristmasLights } from './christmas-lights';
 
 export function ConditionalLayout({
     user,
@@ -19,7 +20,8 @@ export function ConditionalLayout({
 
     return (
         <>
-            <div className="w-full bg-black">
+            <div className="w-full bg-black relative">
+                <ChristmasLights />
                 <Image
                     src="/bytehack_website_banner.png"
                     alt="ByteHack Banner"

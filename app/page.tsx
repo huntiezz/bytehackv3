@@ -7,6 +7,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { SnowGlobe } from "@/components/snow-globe";
 
 export default async function LandingPage() {
   const user = await getCurrentUser();
@@ -45,7 +46,7 @@ export default async function LandingPage() {
             reverse engineering tools, and cutting-edge offsets.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 relative z-10">
             {user ? (
               <Link href="/forum">
                 <Button size="lg" className="rounded-full px-8 h-12 text-base">
@@ -68,6 +69,10 @@ export default async function LandingPage() {
                 </Link>
               </>
             )}
+          </div>
+
+          <div className="mt-8 transform scale-75 md:scale-90 origin-top flex justify-center pb-12 pointer-events-none select-none">
+            <SnowGlobe />
           </div>
         </div>
       </section>

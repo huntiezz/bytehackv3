@@ -11,6 +11,7 @@ import { ConditionalLayoutWrapper } from "@/components/conditional-layout-wrappe
 import { ToastProvider } from "@/components/toast-provider";
 import { PresenceUpdater } from "@/components/presence-updater";
 import { Analytics } from "@vercel/analytics/next";
+import { Snowfall } from "@/components/snowfall";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -75,6 +76,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${proggyClean.variable} font-sans antialiased`}>
+        <Snowfall />
         <ToastProvider />
         <ConditionalLayoutWrapper />
         <PresenceUpdater />
