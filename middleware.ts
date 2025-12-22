@@ -63,6 +63,21 @@ export async function middleware(request: NextRequest) {
 
 
 
+  // Device ID for rate limiting (Christmas, etc.)
+  let deviceId = request.cookies.get('bh_device_id')?.value;
+  if (!deviceId) {
+    deviceId = crypto.randomUUID();
+    response.cookies.set({
+      name: 'bh_device_id',
+      value: deviceId,
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 24 * 365 * 10, // 10 years
+      sameSite: 'lax'
+    });
+  }
+
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');

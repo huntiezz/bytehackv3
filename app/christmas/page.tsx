@@ -1,7 +1,7 @@
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { ChristmasScene } from "@/components/christmas-scene";
 import { Metadata } from "next";
-import { headers } from "next/headers";
+import { headers, cookies } from "next/headers";
 
 export const metadata: Metadata = {
   title: "Merry Christmas | ByteHack",
@@ -32,12 +32,21 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
   const headersList = await headers();
   const ip = headersList.get("x-forwarded-for") || "unknown";
 
-  // Check if IP has already attempted
-  const { data: existingAttempt } = await supabase
+  const cookieStore = await cookies();
+  const deviceId = cookieStore.get("bh_device_id")?.value;
+
+  // Check if IP or Device has already attempted
+  let query = supabase
     .from('christmas_attempts')
-    .select('ip_address, invite_code')
-    .eq('ip_address', ip)
-    .maybeSingle();
+    .select('ip_address, invite_code');
+
+  if (deviceId) {
+    query = query.or(`ip_address.eq.${ip},device_id.eq.${deviceId}`);
+  } else {
+    query = query.eq('ip_address', ip);
+  }
+
+  const { data: existingAttempt } = await query.maybeSingle();
 
   let alreadyRevealed = false;
 
@@ -45,13 +54,13 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
   // 1. If debug (forceWin), always proceed regardless of attempts.
   // 2. If not debug, strictly check existing attempt.
   if (existingAttempt && !forceWin) {
-    console.log("Christmas Page: IP " + ip + " already attempted. Code:", existingAttempt.invite_code);
+    console.log("Christmas Page: IP " + ip + " / Device " + deviceId + " already attempted. Code:", existingAttempt.invite_code);
     inviteCode = existingAttempt.invite_code;
     alreadyRevealed = true;
   } else {
     // New Attempt OR Force Win
     const isLucky = Math.random() < 0.05 || forceWin;
-    console.log("Christmas Page: User (IP: " + ip + ") is lucky?", isLucky, "ForceWin:", forceWin);
+    console.log("Christmas Page: User (IP: " + ip + ", Device: " + deviceId + ") is lucky?", isLucky, "ForceWin:", forceWin);
 
     if (isLucky) {
       // 1. Try to fetch an unused invite code
@@ -92,6 +101,7 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
       // New user: Insert
       const { error: insertError } = await supabase.from('christmas_attempts').insert({
         ip_address: ip,
+        device_id: deviceId || null,
         invite_code: inviteCode
       });
       if (insertError) console.error("Attempt insert error:", insertError);
@@ -99,7 +109,7 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
       // Debug/Force: Update existing row to save the win
       await supabase.from('christmas_attempts')
         .update({ invite_code: inviteCode })
-        .eq('ip_address', ip);
+        .eq('ip_address', ip); // Use IP as primary key for debug updates
     }
   }
 
