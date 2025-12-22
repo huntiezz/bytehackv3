@@ -14,19 +14,27 @@ export async function POST(req: Request) {
 
         // Check for IP Blacklist
         // We need a supabase client with service role to check global blacklist
-        if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+        const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\"/g, "").trim();
+        const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").replace(/\"/g, "").trim();
+
+        console.log(`[Register] Supabase URL present: ${!!supabaseUrl}, Service Key present: ${!!serviceKey}`);
+
+        if (!supabaseUrl || !serviceKey) {
+            console.error("[Register] Service configuration missing variables");
             return NextResponse.json({ error: "Service configuration error" }, { status: 503 });
         }
-        const supabaseAdmin = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY
-        );
 
-        const { data: ipBan } = await supabaseAdmin
+        const supabaseAdmin = createClient(supabaseUrl, serviceKey);
+
+        const { data: ipBan, error: ipCheckError } = await supabaseAdmin
             .from('ip_blacklist')
             .select('reason')
             .eq('ip_address', ip)
             .maybeSingle();
+
+        if (ipCheckError) {
+            console.error("[Register] IP Check Error (Service Key might be invalid):", ipCheckError.message);
+        }
 
         if (ipBan) {
             return NextResponse.json({ error: "This IP address is blacklisted." }, { status: 403 });
@@ -39,8 +47,7 @@ export async function POST(req: Request) {
         }
 
         const inputInviteCode = inviteCode?.trim().toUpperCase();
-
-
+        console.log(`[Register Debug] Searching for code: '${inputInviteCode}'`);
 
         const { data: codeDataArray, error: codeError } = await supabaseAdmin
             .from("invite_codes")
@@ -48,8 +55,22 @@ export async function POST(req: Request) {
             .ilike("code", inputInviteCode)
             .limit(1);
 
+        if (codeError) {
+            console.error("[Register Debug] Error fetching code:", JSON.stringify(codeError));
+        }
+
         if (codeError || !codeDataArray?.[0]) {
-            return NextResponse.json({ error: "Invalid invite code" }, { status: 400 });
+            // DEEP DEBUG: List what we CAN see
+            const { data: allCodes } = await supabaseAdmin.from("invite_codes").select("code").limit(10);
+            const foundCodes = allCodes?.map(c => c.code) || [];
+
+            console.error(`[Register] Validation failed for code: '${inputInviteCode}'. Reachable:`, foundCodes);
+
+            return NextResponse.json({
+                error: `Invalid invite code: ${inputInviteCode}`,
+                debug: codeError ? codeError.message : "Not found in DB",
+                reachable_codes: foundCodes
+            }, { status: 400 });
         }
 
         const codeData = codeDataArray[0];

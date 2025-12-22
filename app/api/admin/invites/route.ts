@@ -64,10 +64,7 @@ export async function POST(req: Request) {
             ? customCode.trim().toUpperCase()
             : 'INV-' + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        );
+        const supabase = await createServerClient();
 
         const { data, error } = await supabase
             .from("invite_codes")
@@ -108,10 +105,7 @@ export async function DELETE(req: Request) {
             return NextResponse.json({ error: "Code required" }, { status: 400 });
         }
 
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        );
+        const supabase = await createServerClient();
 
         const { error } = await supabase
             .from("invite_codes")
@@ -144,10 +138,7 @@ export async function PATCH(req: Request) {
             return NextResponse.json({ error: "ID required" }, { status: 400 });
         }
 
-        const supabase = createClient(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.SUPABASE_SERVICE_ROLE_KEY!
-        );
+        const supabase = await createServerClient();
 
         const updates: any = {};
         if (code !== undefined) updates.code = code.toUpperCase();
