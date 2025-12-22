@@ -1,17 +1,22 @@
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
+import { Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChristmasSceneProps {
     inviteCode: string | null;
+    initialRevealed?: boolean;
 }
 
-export function ChristmasScene({ inviteCode }: ChristmasSceneProps) {
+export function ChristmasScene({ inviteCode, initialRevealed = false }: ChristmasSceneProps) {
     const sceneRef = useRef<HTMLDivElement>(null);
-    const [started, setStarted] = useState(false);
+    const [started, setStarted] = useState(initialRevealed);
     const [snowParticles, setSnowParticles] = useState<{ x: number; y: number; r: number; o: number }[]>([]);
+    const [showCopyBtn, setShowCopyBtn] = useState(initialRevealed && !!inviteCode);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         setSnowParticles(
@@ -29,6 +34,16 @@ export function ChristmasScene({ inviteCode }: ChristmasSceneProps) {
 
         const svg = sceneRef.current.querySelector(".scene") as HTMLElement;
         if (!svg) return;
+
+        // Skip animation if already revealed
+        if (initialRevealed) {
+            svg.style.display = "block";
+            const gift = document.querySelector(".gift");
+            if (gift) gift.classList.add("hidden");
+
+            gsap.set(svg.querySelector("#letters"), { opacity: 1 });
+            return;
+        }
 
         // Select letters - result
         const letters = svg.querySelectorAll("#letters > *");
@@ -74,7 +89,17 @@ export function ChristmasScene({ inviteCode }: ChristmasSceneProps) {
         function copyAnim() {
             // Reveal the letters container first
             gsap.to(svg.querySelector("#letters"), { duration: 0.1, opacity: 1 });
-            gsap.to(letters, { duration: 3, scale: 1, rotationZ: 0, ease: "elastic.out(1, 0.3)", stagger: 0.1, onComplete: startAnimations });
+            gsap.to(letters, {
+                duration: 3,
+                scale: 1,
+                rotationZ: 0,
+                ease: "elastic.out(1, 0.3)",
+                stagger: 0.1,
+                onComplete: () => {
+                    startAnimations();
+                    if (inviteCode) setShowCopyBtn(true);
+                }
+            });
         }
 
         // Setup triggers
@@ -100,10 +125,10 @@ export function ChristmasScene({ inviteCode }: ChristmasSceneProps) {
             >
                 <defs>
                     <style>{`
-                      .cls-1{fill:#fff;} 
-                      .cls-2{fill:#e6e6e6;}
-                      #letters text { font-family: 'Courier New', monospace; font-weight: bold; font-size: 60px; text-anchor: middle; }
-                   `}</style>
+    .cls-1{ fill: #fff; }
+                      .cls-2{ fill: #e6e6e6; }
+#letters text { font-family: 'Courier New', monospace; font-weight: bold; font-size: 60px; text-anchor: middle; }
+`}</style>
                 </defs>
 
                 {/* Sky/Background - Night */}
@@ -162,6 +187,33 @@ export function ChristmasScene({ inviteCode }: ChristmasSceneProps) {
                 </div>
                 <div className="text-white text-center mt-4 font-bold text-xl drop-shadow-md animate-bounce">Click to Open</div>
             </div>
+
+            {/* Copy Button Overlay */}
+            {inviteCode && showCopyBtn && (
+                <div className="absolute top-[60%] left-1/2 -translate-x-1/2 -translate-y-1/2 animate-in fade-in zoom-in duration-1000 fill-mode-forwards opacity-0" style={{ animationDelay: '0.5s', animationFillMode: 'forwards' }}>
+                    <button
+                        onClick={() => {
+                            if (inviteCode) navigator.clipboard.writeText(inviteCode);
+                            setCopied(true);
+                            setTimeout(() => setCopied(false), 2000);
+                        }}
+                        className={cn(
+                            "flex items-center gap-2 px-8 py-4 rounded-full font-bold text-white text-lg shadow-[0_0_20px_rgba(22,163,74,0.6)] transition-all transform hover:scale-110 active:scale-95 border-2 border-green-400",
+                            copied ? "bg-green-700 hover:bg-green-800" : "bg-green-600 hover:bg-green-500"
+                        )}
+                    >
+                        {copied ? (
+                            <>
+                                <Check className="w-6 h-6" /> COPIED!
+                            </>
+                        ) : (
+                            <>
+                                <Copy className="w-6 h-6" /> COPY CODE
+                            </>
+                        )}
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

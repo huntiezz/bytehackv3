@@ -35,17 +35,21 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
   // Check if IP has already attempted
   const { data: existingAttempt } = await supabase
     .from('christmas_attempts')
-    .select('id')
+    .select('ip_address, invite_code')
     .eq('ip_address', ip)
-    .single();
+    .maybeSingle();
+
+  let alreadyRevealed = false;
 
   // Logic: 
   // 1. If debug (forceWin), always proceed regardless of attempts.
-  // 2. If not debug, strictly require NO existing attempt.
-  if (!existingAttempt || forceWin) {
-    // Try to record attempt. If race condition (already inserted by another req), this might fail or ignore.
-    const { error } = await supabase.from('christmas_attempts').insert({ ip_address: ip });
-
+  // 2. If not debug, strictly check existing attempt.
+  if (existingAttempt && !forceWin) {
+    console.log("Christmas Page: IP " + ip + " already attempted. Code:", existingAttempt.invite_code);
+    inviteCode = existingAttempt.invite_code;
+    alreadyRevealed = true;
+  } else {
+    // New Attempt OR Force Win
     const isLucky = Math.random() < 0.05 || forceWin;
     console.log("Christmas Page: User (IP: " + ip + ") is lucky?", isLucky, "ForceWin:", forceWin);
 
@@ -66,7 +70,7 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
           .select('id')
           .or('role.eq.admin,is_admin.eq.true')
           .limit(1)
-          .maybeSingle(); // Use maybeSingle to avoid error if no admin found (unlikely but safe)
+          .maybeSingle();
 
         if (adminUser) {
           const newCode = 'CHRISTMAS-' + Math.random().toString(36).substring(2, 10).toUpperCase();
@@ -82,14 +86,26 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
         }
       }
     }
-  } else {
-    console.log("Christmas Page: IP " + ip + " already attempted.");
+
+    // Persist the attempt
+    if (!existingAttempt) {
+      // New user: Insert
+      const { error: insertError } = await supabase.from('christmas_attempts').insert({
+        ip_address: ip,
+        invite_code: inviteCode
+      });
+      if (insertError) console.error("Attempt insert error:", insertError);
+    } else if (forceWin) {
+      // Debug/Force: Update existing row to save the win
+      await supabase.from('christmas_attempts')
+        .update({ invite_code: inviteCode })
+        .eq('ip_address', ip);
+    }
   }
 
   return (
     <div className="min-h-screen bg-black flex items-center justify-center overflow-hidden">
-      <ChristmasScene inviteCode={inviteCode} />
+      <ChristmasScene inviteCode={inviteCode} initialRevealed={alreadyRevealed} />
     </div>
   );
 }
-
