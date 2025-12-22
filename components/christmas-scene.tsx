@@ -179,35 +179,37 @@ export function ChristmasScene({ inviteCode }: ChristmasSceneProps) {
                    `}</style>
                 </defs>
 
-                {/* Sky/Background */}
-                <rect width="1600" height="900" fill="#000000" />
+                {/* Sky/Background - Night */}
+                <rect width="1600" height="900" fill="#020617" />
 
-                {/* Snow Particles */}
+                {/* Stars / Distant Snow */}
                 <g id="snow">
-                    {Array.from({ length: 80 }).map((_, i) => (
-                        <circle key={i} cx={Math.random() * 1600} cy={Math.random() * 900} r={Math.random() * 4 + 2} fill="white" opacity="0.8" />
+                    {Array.from({ length: 100 }).map((_, i) => (
+                        <circle key={i} cx={Math.random() * 1600} cy={Math.random() * 900} r={Math.random() * 3 + 1} fill="white" opacity={Math.random() * 0.8} />
                     ))}
                 </g>
 
-                {/* Ski Lift (Background) */}
-                <g id="skilift" opacity="0.8">
-                    <g id="leftSkiLift"><rect x="100" y="-100" width="10" height="600" fill="#4a5568" /></g>
-                    <g id="rightSkiLift"><rect x="1500" y="-100" width="10" height="600" fill="#4a5568" /></g>
-                    <g id="trailSkiLift"><line x1="100" y1="150" x2="1500" y2="150" stroke="#2d3748" strokeWidth="2" /></g>
-                    <g id="lift"><rect x="150" y="150" width="50" height="60" rx="4" fill="#ef4444" /></g>
+                {/* Ski Lift (Silhouetted) */}
+                <g id="skilift" opacity="0.6">
+                    <g id="leftSkiLift"><rect x="100" y="-100" width="10" height="600" fill="#1e293b" /></g>
+                    <g id="rightSkiLift"><rect x="1500" y="-100" width="10" height="600" fill="#1e293b" /></g>
+                    <g id="trailSkiLift"><line x1="100" y1="150" x2="1500" y2="150" stroke="#475569" strokeWidth="2" /></g>
+                    <g id="lift"><rect x="150" y="150" width="50" height="60" rx="4" fill="#991b1b" /></g>
                 </g>
 
-                {/* Mountains/Ground Hills */}
-                <path d="M0,900 L0,600 C400,550 800,650 1600,500 L1600,900 Z" fill="#e2e8f0" />
-                <path d="M0,900 L0,700 C600,650 1200,800 1600,700 L1600,900 Z" fill="white" />
+                {/* Mountains/Ground Hills (Night Mode) */}
+                {/* Back Hill */}
+                <path d="M0,900 L0,600 C400,550 800,650 1600,500 L1600,900 Z" fill="#0f172a" /> {/* Slate 900 */}
+                {/* Front Hill */}
+                <path d="M0,900 L0,700 C600,650 1200,800 1600,700 L1600,900 Z" fill="#1e293b" /> {/* Slate 800 */}
 
                 {/* Houses (Left) */}
                 <g id="houses" transform="translate(100, 500)">
-                    <rect width="180" height="140" fill="#718096" />
-                    <polygon points="0,0 90,-60 180,0" fill="#2d3748" />
-                    <rect x="70" y="80" width="40" height="60" fill="#4a5568" />
+                    <rect width="180" height="140" fill="#334155" />
+                    <polygon points="0,0 90,-60 180,0" fill="#1e293b" />
+                    <rect x="70" y="80" width="40" height="60" fill="#0f172a" />
                     {/* Smokestack */}
-                    <rect x="130" y="-40" width="20" height="40" fill="#4a5568" />
+                    <rect x="130" y="-40" width="20" height="40" fill="#1e293b" />
                     <g id="smokes">
                         {/* Smokes logic requires them to be children of #smokes */}
                         <g><circle r="10" fill="white" opacity="0.5" /></g>
@@ -218,15 +220,15 @@ export function ChristmasScene({ inviteCode }: ChristmasSceneProps) {
                     </g>
                 </g>
 
-                {/* Penguins (Right) */}
-                <g id="snowPenguins" transform="translate(0, 100)"><ellipse cx="730" cy="500" rx="150" ry="30" fill="#e2e8f0" /></g>
+                {/* Penguins (Right) - Ice Floe */}
+                <g id="snowPenguins" transform="translate(0, 100)"><ellipse cx="730" cy="500" rx="150" ry="30" fill="#1e293b" /></g>
                 <g id="penguins" transform="translate(680, 480)">
-                    <g><ellipse cx="0" cy="0" rx="20" ry="30" fill="#1a202c" /><circle cx="0" cy="-20" r="10" fill="#1a202c" /><circle cx="5" cy="-22" r="2" fill="white" /></g>
-                    <g transform="translate(50,0)"><ellipse cx="0" cy="0" rx="20" ry="30" fill="#1a202c" /><circle cx="0" cy="-20" r="10" fill="#1a202c" /></g>
+                    <g><ellipse cx="0" cy="0" rx="20" ry="30" fill="#0f172a" /><circle cx="0" cy="-20" r="10" fill="#0f172a" /><circle cx="5" cy="-22" r="2" fill="white" /></g>
+                    <g transform="translate(50,0)"><ellipse cx="0" cy="0" rx="20" ry="30" fill="#0f172a" /><circle cx="0" cy="-20" r="10" fill="#0f172a" /></g>
                     {/* Babies */}
-                    <g transform="translate(100,10)"><circle r="15" fill="#718096" /></g>
-                    <g transform="translate(130,10)"><circle r="15" fill="#718096" /></g>
-                    <g transform="translate(160,10)"><circle r="15" fill="#718096" /></g>
+                    <g transform="translate(100,10)"><circle r="15" fill="#475569" /></g>
+                    <g transform="translate(130,10)"><circle r="15" fill="#475569" /></g>
+                    <g transform="translate(160,10)"><circle r="15" fill="#475569" /></g>
                 </g>
 
                 {/* Characters Center-Left */}
