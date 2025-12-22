@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Mail, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { usePathname } from "next/navigation";
 
 interface EmailVerificationModalProps {
     userEmail?: string | null;
@@ -20,12 +21,15 @@ export function EmailVerificationModal({ userEmail, isVerified }: EmailVerificat
     const [code, setCode] = useState("");
     const [loading, setLoading] = useState(false);
     const [cooldown, setCooldown] = useState(0);
+    const pathname = usePathname();
 
     useEffect(() => {
-        if (!isVerified) {
+        if (!isVerified && pathname?.startsWith("/forum")) {
             setIsOpen(true);
+        } else {
+            setIsOpen(false);
         }
-    }, [isVerified]);
+    }, [isVerified, pathname]);
 
     useEffect(() => {
         if (cooldown > 0) {
@@ -88,12 +92,24 @@ export function EmailVerificationModal({ userEmail, isVerified }: EmailVerificat
         }
     };
 
+    const handleLogout = async () => {
+        try {
+            await fetch("/api/auth/logout", { method: "POST" });
+            window.location.href = "/login";
+        } catch (error) {
+            console.error("Logout failed", error);
+        }
+    };
+
+    if (!isOpen) return null;
+
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => {
-            if (isVerified) setIsOpen(open);
-            // Don't allow closing if not verified
-        }}>
-            <DialogContent className="sm:max-w-md bg-[#09090b] border-[#27272a]" onPointerDownOutside={(e) => !isVerified && e.preventDefault()} onEscapeKeyDown={(e) => !isVerified && e.preventDefault()}>
+        <Dialog open={isOpen} onOpenChange={() => { }}>
+            <DialogContent
+                className="sm:max-w-md bg-[#09090b] border-[#27272a] [&>button]:hidden"
+                onPointerDownOutside={(e) => e.preventDefault()}
+                onEscapeKeyDown={(e) => e.preventDefault()}
+            >
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold flex items-center gap-2">
                         {step === 3 ? <CheckCircle2 className="text-green-500" /> : <Mail className="text-primary" />}
@@ -162,6 +178,17 @@ export function EmailVerificationModal({ userEmail, isVerified }: EmailVerificat
                     {step === 3 && (
                         <div className="flex flex-col items-center justify-center py-4 text-center">
                             <p className="text-sm text-muted-foreground">Redirecting you in a moment...</p>
+                        </div>
+                    )}
+
+                    {step !== 3 && (
+                        <div className="mt-4 text-center border-t border-[#27272a] pt-4">
+                            <button
+                                onClick={handleLogout}
+                                className="text-xs text-muted-foreground hover:text-red-500 transition-colors"
+                            >
+                                Log out
+                            </button>
                         </div>
                     )}
                 </div>
