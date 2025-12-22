@@ -95,7 +95,7 @@ export function ChristmasScene({ inviteCode }: ChristmasSceneProps) {
                 </defs>
 
                 {/* Sky/Background - Night */}
-                <rect width="1600" height="900" fill="#020617" />
+                <rect width="1600" height="900" fill="#000000" />
 
                 {/* Stars / Distant Snow */}
                 <g id="snow">

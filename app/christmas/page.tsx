@@ -50,7 +50,7 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
     console.log("Christmas Page: User (IP: " + ip + ") is lucky?", isLucky, "ForceWin:", forceWin);
 
     if (isLucky) {
-      // Fetch an unused invite code
+      // 1. Try to fetch an unused invite code
       const { data } = await supabase
         .from('invite_codes')
         .select('code')
@@ -59,6 +59,27 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
 
       if (data && data.length > 0) {
         inviteCode = data[0].code;
+      } else {
+        // 2. Create one on the fly if none exist
+        const { data: adminUser } = await supabase
+          .from('profiles')
+          .select('id')
+          .or('role.eq.admin,is_admin.eq.true')
+          .limit(1)
+          .maybeSingle(); // Use maybeSingle to avoid error if no admin found (unlikely but safe)
+
+        if (adminUser) {
+          const newCode = 'CHRISTMAS-' + Math.random().toString(36).substring(2, 10).toUpperCase();
+          const { data: createdCode } = await supabase.from('invite_codes').insert({
+            code: newCode,
+            created_by: adminUser.id,
+            uses: 0,
+            max_uses: 1,
+            description: 'Christmas Event Reward'
+          }).select('code').single();
+
+          if (createdCode) inviteCode = createdCode.code;
+        }
       }
     }
   } else {
