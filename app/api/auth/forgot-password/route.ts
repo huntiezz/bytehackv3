@@ -57,7 +57,7 @@ export async function POST(req: Request) {
         );
 
 
-        const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
+        const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://bytehack.net").replace(/\/$/, "");
         const { data, error } = await supabaseAdmin.auth.admin.generateLink({
             type: "recovery",
             email,
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
         const redirect_to = urlObj.searchParams.get('redirect_to');
 
 
-        const maskedLink = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/reset-proxy?token=${token}&type=${type}&redirect_to=${encodeURIComponent(redirect_to || '')}`;
+        const maskedLink = `${appUrl}/api/auth/reset-proxy?token=${token}&type=${type}&redirect_to=${encodeURIComponent(redirect_to || '')}`;
 
 
         await sendPasswordResetEmail(email, maskedLink, {
