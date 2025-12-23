@@ -6,12 +6,18 @@ export async function GET(request: Request) {
     const type = searchParams.get("type");
     const redirect_to = searchParams.get("redirect_to");
 
-    if (!token || !type || !redirect_to) {
+    if (!token || !type) {
         return NextResponse.redirect(new URL('/login?error=invalid_link', request.url));
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const verifyUrl = `${supabaseUrl}/auth/v1/verify?token=${token}&type=${type}&redirect_to=${encodeURIComponent(redirect_to)}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || "https://bytehack.net";
+
+    // Force the correct callback URL to ensure we land on the correct domain
+    // ignoring any localhost values that might have come from upstream/email
+    const fixedRedirect = `${appUrl}/api/auth/callback?next=/update-password`;
+
+    const verifyUrl = `${supabaseUrl}/auth/v1/verify?token=${token}&type=${type}&redirect_to=${encodeURIComponent(fixedRedirect)}`;
 
     return NextResponse.redirect(verifyUrl);
 }
