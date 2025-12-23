@@ -9,7 +9,7 @@ async function generateHMAC(message: string, secret: string): Promise<string> {
   const encoder = new TextEncoder();
   const keyData = encoder.encode(secret);
   const messageData = encoder.encode(message);
-  
+
   const key = await crypto.subtle.importKey(
     'raw',
     keyData,
@@ -17,7 +17,7 @@ async function generateHMAC(message: string, secret: string): Promise<string> {
     false,
     ['sign']
   );
-  
+
   const signature = await crypto.subtle.sign('HMAC', key, messageData);
   const hashArray = Array.from(new Uint8Array(signature));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
@@ -25,12 +25,12 @@ async function generateHMAC(message: string, secret: string): Promise<string> {
 
 // Security configuration for post creation
 const POST_RATE_LIMITS = {
-  IP_LIMIT: 5, // 5 posts per IP per hour
-  IP_WINDOW: 3600, // 1 hour in seconds
-  USER_LIMIT: 10, // 10 posts per user per hour
+  IP_LIMIT: 10, // 10 posts per IP per hour (was 5)
+  IP_WINDOW: 3600, // 1 hour
+  USER_LIMIT: 20, // 20 posts per user per hour (was 10)
   USER_WINDOW: 3600,
-  BURST_LIMIT: 2, // Only 2 posts per user per 5 minutes (prevents rapid spam)
-  BURST_WINDOW: 300, // 5 minutes
+  BURST_LIMIT: 5, // 5 posts per user per minute (was 2 per 5 min)
+  BURST_WINDOW: 60, // 1 minute
 };
 
 export async function POST(req: NextRequest) {
@@ -53,11 +53,11 @@ export async function POST(req: NextRequest) {
     if (!ipRateLimit.success) {
       const resetTime = Math.ceil((ipRateLimit.reset - Date.now()) / 1000 / 60);
       return NextResponse.json(
-        { 
+        {
           error: `Too many posts from this IP address. Please try again in ${resetTime} minutes.`,
-          retryAfter: ipRateLimit.reset 
+          retryAfter: ipRateLimit.reset
         },
-        { 
+        {
           status: 429,
           headers: {
             'Retry-After': String(Math.ceil((ipRateLimit.reset - Date.now()) / 1000)),
@@ -79,11 +79,11 @@ export async function POST(req: NextRequest) {
     if (!userRateLimit.success) {
       const resetTime = Math.ceil((userRateLimit.reset - Date.now()) / 1000 / 60);
       return NextResponse.json(
-        { 
+        {
           error: `You're posting too quickly. Please wait ${resetTime} minutes before posting again.`,
-          retryAfter: userRateLimit.reset 
+          retryAfter: userRateLimit.reset
         },
-        { 
+        {
           status: 429,
           headers: {
             'Retry-After': String(Math.ceil((userRateLimit.reset - Date.now()) / 1000)),
@@ -105,11 +105,11 @@ export async function POST(req: NextRequest) {
     if (!burstLimit.success) {
       const resetTime = Math.ceil((burstLimit.reset - Date.now()) / 1000);
       return NextResponse.json(
-        { 
+        {
           error: `Please slow down! Wait ${resetTime} seconds before posting again.`,
-          retryAfter: burstLimit.reset 
+          retryAfter: burstLimit.reset
         },
-        { 
+        {
           status: 429,
           headers: {
             'Retry-After': String(Math.ceil((burstLimit.reset - Date.now()) / 1000)),
@@ -195,7 +195,7 @@ export async function POST(req: NextRequest) {
 
     // LAYER 5: Check for duplicate content (prevents copy-paste spam)
     const contentHash = await hashContent(content);
-    
+
     const { data: recentPosts } = await supabase
       .from("threads")
       .select("id")
@@ -263,7 +263,7 @@ export async function POST(req: NextRequest) {
     // Add security headers to response
     let response = NextResponse.json(data);
     response = addSecurityHeaders(response);
-    
+
     return response;
   } catch (error) {
     console.error("Error creating post:", error);
