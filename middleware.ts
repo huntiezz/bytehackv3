@@ -73,11 +73,25 @@ export async function middleware(request: NextRequest) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
     if (appUrl) {
-      if (origin && !origin.startsWith(appUrl)) {
-        return NextResponse.json({ error: "Invalid Request Origin" }, { status: 403 });
-      }
-      if (referer && !referer.startsWith(appUrl)) {
-        return NextResponse.json({ error: "Invalid Request Referer" }, { status: 403 });
+      try {
+        const allowedHost = new URL(appUrl).host;
+
+        if (origin) {
+          const originHost = new URL(origin).host;
+          // Allow exact match or subdomain (e.g. www.bytehack.net vs bytehack.net)
+          if (originHost !== allowedHost && !originHost.endsWith(`.${allowedHost}`)) {
+            return NextResponse.json({ error: "Invalid Request Origin" }, { status: 403 });
+          }
+        }
+
+        if (referer) {
+          const refererHost = new URL(referer).host;
+          if (refererHost !== allowedHost && !refererHost.endsWith(`.${allowedHost}`)) {
+            return NextResponse.json({ error: "Invalid Request Referer" }, { status: 403 });
+          }
+        }
+      } catch (e) {
+        // Ignore malformed URLs to avoid blocking on edge cases
       }
     }
   }
