@@ -60,14 +60,8 @@ export function LoginForm({
         try {
             const supabase = createClient();
 
-            const captchaRes = await fetch("/api/auth/verify-captcha", {
-                method: "POST",
-                body: JSON.stringify({ code: captchaCode })
-            });
-
-            if (!captchaRes.ok) {
-                throw new Error("Invalid CAPTCHA");
-            }
+            // We send the captcha token directly to the login endpoint for verification
+            // to avoid "token already used" errors from double verification.
 
             const loginRes = await fetch("/api/auth/login", {
                 method: "POST",
