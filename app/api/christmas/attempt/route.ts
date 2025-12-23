@@ -18,10 +18,10 @@ export async function POST(req: Request) {
         const ip = headersList.get("x-forwarded-for")?.split(',')[0] || "unknown";
 
         // Strict Race Condition & Spam Protection
-        // 1 request per 10 seconds. This prevents parallel blasting to exploit race conditions.
-        const { success: rateSuccess } = await rateLimit(`christmas_attempt_strict:${ip}`, 1, 10);
+        // 1 request per 24 hours per IP to prevent retry spamming
+        const { success: rateSuccess } = await rateLimit(`christmas_attempt_strict:${ip}`, 1, 86400);
         if (!rateSuccess) {
-            return NextResponse.json({ error: "Too many requests. Slow down." }, { status: 429 });
+            return NextResponse.json({ error: "Too many requests. You can only try once per day." }, { status: 429 });
         }
 
         const supabase = createClient(
