@@ -3,12 +3,26 @@ import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { cookies, headers } from "next/headers";
 
+import { rateLimit } from "@/lib/rate-limit";
+
 export async function POST(req: Request) {
     try {
         const body = await req.json();
         const { fingerprint } = body;
 
+        if (!fingerprint) {
+            return NextResponse.json({ error: "Fingerprint required" }, { status: 400 });
+        }
 
+        const headersList = await headers();
+        const ip = headersList.get("x-forwarded-for")?.split(',')[0] || "unknown";
+
+        // Strict Race Condition & Spam Protection
+        // 1 request per 10 seconds. This prevents parallel blasting to exploit race conditions.
+        const { success: rateSuccess } = await rateLimit(`christmas_attempt_strict:${ip}`, 1, 10);
+        if (!rateSuccess) {
+            return NextResponse.json({ error: "Too many requests. Slow down." }, { status: 429 });
+        }
 
         const supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -26,9 +40,6 @@ export async function POST(req: Request) {
         if (settings && !settings.is_enabled) {
             return NextResponse.json({ error: "Event Disabled" }, { status: 403 });
         }
-
-        const headersList = await headers();
-        const ip = headersList.get("x-forwarded-for") || "unknown";
 
         const cookieStore = await cookies();
         let deviceId = cookieStore.get("bh_device_id")?.value;

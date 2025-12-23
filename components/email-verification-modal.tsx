@@ -38,6 +38,16 @@ export function EmailVerificationModal({ userEmail, isVerified }: EmailVerificat
         }
     }, [cooldown]);
 
+    const getCsrfToken = async () => {
+        try {
+            const res = await fetch("/api/auth/csrf");
+            const data = await res.json();
+            return data.token;
+        } catch (e) {
+            return null;
+        }
+    };
+
     const handleSendCode = async () => {
         if (!email || !email.includes("@")) {
             toast.error("Please enter a valid email");
@@ -45,9 +55,15 @@ export function EmailVerificationModal({ userEmail, isVerified }: EmailVerificat
         }
 
         setLoading(true);
+        const csrfToken = await getCsrfToken();
+
         try {
             const res = await fetch("/api/auth/send-verification", {
                 method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-Token": csrfToken || ""
+                },
                 body: JSON.stringify({ email })
             });
             const data = await res.json();
@@ -72,9 +88,15 @@ export function EmailVerificationModal({ userEmail, isVerified }: EmailVerificat
         }
 
         setLoading(true);
+        const csrfToken = await getCsrfToken();
+
         try {
             const res = await fetch("/api/auth/verify-email", {
                 method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-Token": csrfToken || ""
+                },
                 body: JSON.stringify({ email, code })
             });
             const data = await res.json();
@@ -94,7 +116,13 @@ export function EmailVerificationModal({ userEmail, isVerified }: EmailVerificat
 
     const handleLogout = async () => {
         try {
-            await fetch("/api/auth/signout", { method: "POST" });
+            const csrfToken = await getCsrfToken();
+            await fetch("/api/auth/signout", {
+                method: "POST",
+                headers: {
+                    "X-CSRF-Token": csrfToken || ""
+                }
+            });
             window.location.href = "/login";
         } catch (error) {
             console.error("Logout failed", error);
