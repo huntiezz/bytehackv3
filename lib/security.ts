@@ -21,35 +21,40 @@ export function rateLimit(identifier: string, limit: number = 10, windowMs: numb
 
 export function sanitizeUserData(user: any) {
   if (!user) return null;
-  
+
   const { email, ...safeUser } = user;
   return safeUser;
 }
 
 export function sanitizeProfile(profile: any, currentUserId?: string) {
   if (!profile) return null;
-  
+
   const sanitized = { ...profile };
-  
+
   if (profile.id !== currentUserId) {
     delete sanitized.email;
   }
-  
+
   return sanitized;
 }
 
 export function getClientIp(request: NextRequest): string {
+  const cfIp = request.headers.get('cf-connecting-ip');
   const forwarded = request.headers.get('x-forwarded-for');
   const realIp = request.headers.get('x-real-ip');
-  
+
+  if (cfIp) {
+    return cfIp.trim();
+  }
+
   if (forwarded) {
     return forwarded.split(',')[0].trim();
   }
-  
+
   if (realIp) {
     return realIp;
   }
-  
+
   return 'unknown';
 }
 
@@ -59,7 +64,7 @@ export function addSecurityHeaders(response: NextResponse): NextResponse {
   response.headers.set('X-XSS-Protection', '1; mode=block');
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  
+
   return response;
 }
 

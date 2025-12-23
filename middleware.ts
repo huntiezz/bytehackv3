@@ -26,7 +26,19 @@ export async function middleware(request: NextRequest) {
   // We exclude /api/christmas because it has its own strict, isolated rate limiter.
   // This prevents Christmas event spam from blocking legitimate app usage (login/register).
   if (request.nextUrl.pathname.startsWith('/api/') && !request.nextUrl.pathname.startsWith('/api/christmas')) {
-    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+    let ip = request.headers.get('cf-connecting-ip')
+      ?? request.headers.get('x-real-ip')
+      ?? request.headers.get('x-forwarded-for')?.split(',')[0].trim()
+      ?? (request as any).ip
+      ?? 'unknown';
+
+    // Fallback to device ID for rate limiting if IP is unknown to prevent shared bucket blocking
+    if (ip === 'unknown') {
+      const deviceId = request.cookies.get('bh_device_id')?.value;
+      if (deviceId) {
+        ip = `device:${deviceId}`;
+      }
+    }
 
     // Limit: 100 requests per minute
     const limit = 100;
