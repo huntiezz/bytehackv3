@@ -17,10 +17,31 @@ export async function POST(req: Request) {
         const headersList = await headers();
         const ip = headersList.get("x-forwarded-for")?.split(',')[0] || "unknown";
 
+        const cookieStore = await cookies();
+        let deviceId = cookieStore.get("bh_device_id")?.value;
+
         // Strict Race Condition & Spam Protection
-        // 1 request per 24 hours per IP to prevent retry spamming
-        const { success: rateSuccess } = await rateLimit(`christmas_attempt_strict:${ip}`, 1, 86400);
-        if (!rateSuccess) {
+        // Check ALL identifiers: IP, Fingerprint, and Device ID concurrently.
+        // If ANY of them have been used in the last 24h, block the request.
+        // This prevents Proxy shuffling (IP change) if they reuse Fingerprint or Cookies.
+        const limit = 1;
+        const window = 86400; // 24 hours
+
+        const checks = [
+            rateLimit(`christmas_strict_ip:${ip}`, limit, window)
+        ];
+
+        if (fingerprint) {
+            checks.push(rateLimit(`christmas_strict_fp:${fingerprint}`, limit, window));
+        }
+
+        if (deviceId) {
+            checks.push(rateLimit(`christmas_strict_dev:${deviceId}`, limit, window));
+        }
+
+        const results = await Promise.all(checks);
+
+        if (results.some(r => !r.success)) {
             return NextResponse.json({ error: "Too many requests. You can only try once per day." }, { status: 429 });
         }
 
@@ -40,9 +61,6 @@ export async function POST(req: Request) {
         if (settings && !settings.is_enabled) {
             return NextResponse.json({ error: "Event Disabled" }, { status: 403 });
         }
-
-        const cookieStore = await cookies();
-        let deviceId = cookieStore.get("bh_device_id")?.value;
 
         let query = supabase
             .from('christmas_attempts')
