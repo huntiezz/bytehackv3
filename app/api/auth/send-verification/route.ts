@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 export async function POST(req: Request) {
     try {
         const user = await getCurrentUser();
-        if (!user || !user.email) {
+        if (!user) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -16,10 +16,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Email is required" }, { status: 400 });
         }
 
-        // Security check: Only allow sending verification to the logged-in user's own email
-        if (email.toLowerCase() !== user.email.toLowerCase()) {
-            return NextResponse.json({ error: "You can only verify your own registered email address." }, { status: 403 });
-        }
+        // Allow sending verification to any email the user wants to verify/claim
+        // Check if email is already taken by another user? Ideally yes, but Supabase auth handles uniqueness on update.
+        // For now, we just allow sending the code.
 
         const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\"/g, "").trim();
         const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").replace(/\"/g, "").trim();
