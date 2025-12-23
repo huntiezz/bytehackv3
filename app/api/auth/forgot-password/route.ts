@@ -57,11 +57,12 @@ export async function POST(req: Request) {
         );
 
 
+        const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "").replace(/\/$/, "");
         const { data, error } = await supabaseAdmin.auth.admin.generateLink({
             type: "recovery",
             email,
             options: {
-                redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/update-password`,
+                redirectTo: `${appUrl}/api/auth/callback?next=/update-password`,
             },
         });
 

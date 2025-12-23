@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get("code");
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || requestUrl.origin;
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || requestUrl.origin;
 
   if (!code) {
     return NextResponse.redirect(new URL("/", baseUrl));
