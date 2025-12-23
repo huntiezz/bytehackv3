@@ -12,8 +12,7 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function ChristmasPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
-  const searchParams = await props.searchParams;
-  const forceWin = searchParams.force_win === 'true';
+
 
   const supabase = createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -31,7 +30,7 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
     .select('is_enabled')
     .single();
 
-  if (settings && !settings.is_enabled && !forceWin) {
+  if (settings && !settings.is_enabled) {
     return (
       <div className="min-h-screen bg-black flex items-center justify-center text-white font-mono flex-col gap-4 select-none">
         <div className="text-6xl mb-4">🎄🚫</div>
@@ -63,7 +62,7 @@ export default async function ChristmasPage(props: { searchParams: Promise<{ [ke
 
   let alreadyRevealed = false;
 
-  if (existingAttempt && !forceWin) {
+  if (existingAttempt) {
     console.log("Christmas Page: IP " + ip + " / Device " + deviceId + " already attempted. Code:", existingAttempt.invite_code);
     inviteCode = existingAttempt.invite_code;
     alreadyRevealed = true;

@@ -114,8 +114,7 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
                     (async () => {
                         setLoading(true);
 
-                        const params = new URLSearchParams(window.location.search);
-                        const forceWin = params.get('force_win') === 'true';
+
 
                         let fpId = 'unknown';
                         try {
@@ -132,7 +131,7 @@ export function ChristmasScene({ inviteCode, initialRevealed = false }: Christma
                             const res = await fetch('/api/christmas/attempt', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ fingerprint: fpId, forceWin })
+                                body: JSON.stringify({ fingerprint: fpId })
                             });
                             const data = await res.json();
 

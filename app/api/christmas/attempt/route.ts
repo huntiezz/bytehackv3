@@ -8,7 +8,7 @@ export async function POST(req: Request) {
         const body = await req.json();
         const { fingerprint } = body;
 
-        const forceWin = body.forceWin === true;
+
 
         const supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
             .select('is_enabled')
             .single();
 
-        if (settings && !settings.is_enabled && !forceWin) {
+        if (settings && !settings.is_enabled) {
             return NextResponse.json({ error: "Event Disabled" }, { status: 403 });
         }
 
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
         const { data: existingAttempt } = await query;
 
-        if (existingAttempt && !forceWin) {
+        if (existingAttempt) {
             return NextResponse.json({
                 success: true,
                 alreadyAttempted: true,
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
             });
         }
 
-        const isLucky = Math.random() < 0.05 || forceWin;
+        const isLucky = Math.random() < 0.05;
         let inviteCode: string | null = null;
 
         if (isLucky) {
@@ -90,10 +90,6 @@ export async function POST(req: Request) {
                 fingerprint: fingerprint || null,
                 invite_code: inviteCode
             });
-        } else if (forceWin) {
-            await supabase.from('christmas_attempts')
-                .update({ invite_code: inviteCode })
-                .eq('ip_address', ip);
         }
 
         return NextResponse.json({

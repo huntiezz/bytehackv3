@@ -1,13 +1,24 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendVerificationEmail } from "@/lib/email";
+import { getCurrentUser } from "@/lib/auth";
 
 export async function POST(req: Request) {
     try {
+        const user = await getCurrentUser();
+        if (!user || !user.email) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
         const { email } = await req.json();
 
         if (!email) {
             return NextResponse.json({ error: "Email is required" }, { status: 400 });
+        }
+
+        // Security check: Only allow sending verification to the logged-in user's own email
+        if (email.toLowerCase() !== user.email.toLowerCase()) {
+            return NextResponse.json({ error: "You can only verify your own registered email address." }, { status: 403 });
         }
 
         const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\"/g, "").trim();
