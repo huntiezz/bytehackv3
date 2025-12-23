@@ -137,6 +137,7 @@ export async function POST(req: Request) {
             email_confirm: true,
             user_metadata: {
                 username: username.toLowerCase().replace(/\s+/g, '_'),
+                email_verified: true
             }
         });
 

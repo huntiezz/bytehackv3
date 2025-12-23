@@ -71,7 +71,10 @@ export function LoginForm({
 
             const loginRes = await fetch("/api/auth/login", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    "x-captcha-token": captchaCode
+                },
                 body: JSON.stringify({ email, password })
             });
 
@@ -87,6 +90,7 @@ export function LoginForm({
             router.refresh();
         } catch (error: any) {
             toast.error(error.message || "Something went wrong");
+            setCaptchaCode(""); // Force re-verification on error
         } finally {
             if (!success) {
                 setLoading(false);

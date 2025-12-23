@@ -7,6 +7,22 @@ import { getClientIp } from "@/lib/security";
 
 export async function POST(request: Request) {
     try {
+        const captchaToken = request.headers.get("x-captcha-token");
+
+        // Server-side CAPTCHA verification
+        if (process.env.NODE_ENV === "production" && process.env.RECAPTCHA_SECRET_KEY) {
+            if (!captchaToken) {
+                return NextResponse.json({ error: "Captcha required" }, { status: 400 });
+            }
+
+            const verifyRes = await fetch(`https://www.google.com/recaptcha/api/siteverify?secret=${process.env.RECAPTCHA_SECRET_KEY}&response=${captchaToken}`, { method: 'POST' });
+            const verifyData = await verifyRes.json();
+
+            if (!verifyData.success) {
+                return NextResponse.json({ error: "Invalid captcha" }, { status: 400 });
+            }
+        }
+
         const ip = request.headers.get("x-forwarded-for") || "unknown";
         const { success } = await rateLimit(`login:${ip}`, 5, 300);
 

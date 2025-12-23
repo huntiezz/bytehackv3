@@ -38,6 +38,22 @@ export async function updateSession(request: NextRequest) {
     throw new Error("Failed to create Supabase client in middleware");
   }
 
+  // CLEANUP: Clean up duplicate/legacy Supabase cookies
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (supabaseUrl) {
+    try {
+      const projectId = supabaseUrl.match(/https:\/\/([^.]+)\./)?.[1];
+      if (projectId) {
+        const defaultCookieName = `sb-${projectId}-auth-token`;
+        if (request.cookies.has(defaultCookieName)) {
+          supabaseResponse.cookies.delete(defaultCookieName);
+        }
+      }
+    } catch (e) {
+      // ignore
+    }
+  }
+
   // Refresh session if needed
   const { data: { user } } = await supabase.auth.getUser()
 

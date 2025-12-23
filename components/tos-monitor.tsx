@@ -23,11 +23,15 @@ export function TosMonitor() {
 
     useEffect(() => {
         if (typeof window === 'undefined') return;
+        const isForumPost = pathname?.startsWith('/forum/') &&
+            pathname !== '/forum' &&
+            !pathname.includes('/search') &&
+            pathname.split('/').length === 3;
 
-
-        if (pathname?.startsWith('/forum/post/') && pathname !== lastPathRef.current) {
+        if (isForumPost && pathname !== lastPathRef.current) {
             const currentCount = parseInt(localStorage.getItem('tos_view_count') || '0');
             const newCount = currentCount + 1;
+            console.log(`ToS Monitor: View count ${newCount} (Path: ${pathname})`);
             localStorage.setItem('tos_view_count', newCount.toString());
 
 

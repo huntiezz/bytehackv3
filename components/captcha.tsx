@@ -25,6 +25,11 @@ export function Captcha({ onVerify }: CaptchaProps) {
         setError("Security check failed. Please refresh or check configuration.");
     };
 
+    const handleExpired = () => {
+        onVerify("");
+        setError("Captcha expired. Please verify again.");
+    };
+
     if (!process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
         return <div className="text-red-500 text-xs p-2 text-center">Missing Site Key</div>;
     }
@@ -46,6 +51,7 @@ export function Captcha({ onVerify }: CaptchaProps) {
                 sitekey={process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}
                 onChange={handleChange}
                 onErrored={handleError}
+                onExpired={handleExpired}
                 theme="dark"
             />
             {error && (

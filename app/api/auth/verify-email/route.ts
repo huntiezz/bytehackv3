@@ -11,6 +11,10 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "Email and code are required" }, { status: 400 });
         }
 
+        if (typeof code !== 'string') {
+            return NextResponse.json({ error: "Invalid code format" }, { status: 400 });
+        }
+
         const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\"/g, "").trim();
         const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").replace(/\"/g, "").trim();
         const supabaseAdmin = createClient(supabaseUrl, serviceKey);
