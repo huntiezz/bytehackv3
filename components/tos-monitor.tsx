@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
     AlertDialog,
@@ -71,7 +72,7 @@ export function TosMonitor() {
                 <AlertDialogHeader>
                     <AlertDialogTitle>TOS Re-acknowledgement</AlertDialogTitle>
                     <AlertDialogDescription>
-                        You have viewed 10 posts. To continue using the forum, please confirm that you still agree to our Terms of Service and Rules.
+                        You have viewed 10 posts. To continue using the forum, please confirm that you still agree to our <Link href="/rules" className="text-primary hover:underline font-bold" target="_blank">Terms of Service and Rules</Link>.
                         <br /><br />
                         Declining will log you out immediately.
                     </AlertDialogDescription>
