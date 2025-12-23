@@ -5,7 +5,17 @@ export async function GET(request: Request) {
     const requestUrl = new URL(request.url);
     const code = requestUrl.searchParams.get("code");
     const next = requestUrl.searchParams.get("next") ?? "/forum";
-    const origin = requestUrl.origin;
+    let origin = requestUrl.origin;
+    const forwardedHost = request.headers.get("x-forwarded-host");
+    const hostHeader = request.headers.get("host");
+
+    if (forwardedHost) {
+        origin = `https://${forwardedHost}`;
+    } else if (hostHeader && !hostHeader.includes("localhost")) {
+        origin = `https://${hostHeader}`;
+    }
+
+    origin = origin.replace(/\/$/, "");
 
     if (code) {
         const supabase = await createClient();

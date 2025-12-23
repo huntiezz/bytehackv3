@@ -11,7 +11,19 @@ export async function GET(request: Request) {
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const requestUrl = new URL(request.url);
-    const appUrl = requestUrl.origin;
+
+    // Robust detection of the actual public domain
+    let appUrl = requestUrl.origin;
+    const forwardedHost = request.headers.get("x-forwarded-host");
+    const hostHeader = request.headers.get("host");
+
+    if (forwardedHost) {
+        appUrl = `https://${forwardedHost}`;
+    } else if (hostHeader && !hostHeader.includes("localhost")) {
+        appUrl = `https://${hostHeader}`;
+    }
+
+    appUrl = appUrl.replace(/\/$/, "");
 
     // Force the correct callback URL to ensure we land on the correct domain
     const fixedRedirect = `${appUrl}/auth/callback?next=/update-password`;
