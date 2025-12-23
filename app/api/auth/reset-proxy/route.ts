@@ -11,11 +11,11 @@ export async function GET(request: Request) {
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '') || "https://bytehack.net";
+    const requestUrl = new URL(request.url);
+    const appUrl = requestUrl.origin;
 
     // Force the correct callback URL to ensure we land on the correct domain
-    // ignoring any localhost values that might have come from upstream/email
-    const fixedRedirect = `${appUrl}/api/auth/callback?next=/update-password`;
+    const fixedRedirect = `${appUrl}/auth/callback?next=/update-password`;
 
     const verifyUrl = `${supabaseUrl}/auth/v1/verify?token=${token}&type=${type}&redirect_to=${encodeURIComponent(fixedRedirect)}`;
 

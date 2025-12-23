@@ -57,12 +57,13 @@ export async function POST(req: Request) {
         );
 
 
-        const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://bytehack.net").replace(/\/$/, "");
+        const requestOrigin = req.headers.get("origin") || new URL(req.url).origin;
+        const appUrl = (requestOrigin || process.env.NEXT_PUBLIC_APP_URL || "https://bytehack.net").replace(/\/$/, "");
         const { data, error } = await supabaseAdmin.auth.admin.generateLink({
             type: "recovery",
             email,
             options: {
-                redirectTo: `${appUrl}/api/auth/callback?next=/update-password`,
+                redirectTo: `${appUrl}/auth/callback?next=/update-password`,
             },
         });
 
