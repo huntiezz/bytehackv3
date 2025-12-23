@@ -8,11 +8,11 @@ export const dynamic = 'force-dynamic';
 export async function POST(req: Request) {
     try {
         const ip = req.headers.get("x-forwarded-for") || "unknown";
-        const { success } = await rateLimit(`register:${ip}`, 5, 3600);
+        // const { success } = await rateLimit(`register:${ip}`, 5, 3600);
 
-        if (!success) {
-            return NextResponse.json({ error: "Too many registration attempts. Please try again later." }, { status: 429 });
-        }
+        // if (!success) {
+        //     return NextResponse.json({ error: "Too many registration attempts. Please try again later." }, { status: 429 });
+        // }
 
         const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\"/g, "").trim();
         const serviceKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").replace(/\"/g, "").trim();

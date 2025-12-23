@@ -24,11 +24,11 @@ export async function POST(request: Request) {
         }
 
         const ip = request.headers.get("x-forwarded-for") || "unknown";
-        const { success } = await rateLimit(`login:${ip}`, 5, 300);
+        // const { success } = await rateLimit(`login:${ip}`, 5, 300);
 
-        if (!success) {
-            return NextResponse.json({ error: "Too many login attempts. Please try again later." }, { status: 429 });
-        }
+        // if (!success) {
+        //     return NextResponse.json({ error: "Too many login attempts. Please try again later." }, { status: 429 });
+        // }
 
         const { email, password } = await request.json();
 

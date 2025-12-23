@@ -22,47 +22,9 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // 1. API RATE LIMITING (Global protection)
-  // We exclude /api/christmas because it has its own strict, isolated rate limiter.
-  // This prevents Christmas event spam from blocking legitimate app usage (login/register).
-  if (request.nextUrl.pathname.startsWith('/api/') && !request.nextUrl.pathname.startsWith('/api/christmas')) {
-    let ip = request.headers.get('cf-connecting-ip')
-      ?? request.headers.get('x-real-ip')
-      ?? request.headers.get('x-forwarded-for')?.split(',')[0].trim()
-      ?? (request as any).ip
-      ?? 'unknown';
-
-    // Fallback to device ID for rate limiting if IP is unknown to prevent shared bucket blocking
-    if (ip === 'unknown') {
-      const deviceId = request.cookies.get('bh_device_id')?.value;
-      if (deviceId) {
-        ip = `device:${deviceId}`;
-      }
-    }
-
-    // Limit: 100 requests per minute
-    const limit = 100;
-    const window = 60;
-    const key = `global_api:${ip}`;
-
-    try {
-      const { data, error } = await adminClient.rpc('check_rate_limit', {
-        rate_key: key,
-        rate_limit: limit,
-        window_seconds: window,
-        cost_val: 1
-      });
-
-      if (error) {
-        console.error("Middleware Rate Limit RPC Error:", error);
-      } else if (data && !data.success) {
-        return NextResponse.json({ error: "Too many requests. Please slow down." }, { status: 429 });
-      }
-    } catch (e) {
-      // Fail open to prevent blocking legitimate users during DB hiccups
-      console.error("Middleware Rate Limit Error:", e);
-    }
-  }
+  // 1. API RATE LIMITING (Global protection) - REMOVED PER REQUEST
+  // Only Christmas and Posts endpoints handle their own specific limits now.
+  // Global rate limiter is disabled to prevent blocking regular site usage.
 
   // 2. ORIGIN VERIFICATION (Anti-CSRF / Security Challenge)
   if (request.nextUrl.pathname.startsWith('/api/') && request.method !== 'GET' && process.env.NODE_ENV === 'production') {
