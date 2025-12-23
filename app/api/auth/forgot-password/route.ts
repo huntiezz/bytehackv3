@@ -57,8 +57,23 @@ export async function POST(req: Request) {
         );
 
 
-        const requestOrigin = req.headers.get("origin") || new URL(req.url).origin;
-        const appUrl = (requestOrigin || process.env.NEXT_PUBLIC_APP_URL || "https://bytehack.net").replace(/\/$/, "");
+        let appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://bytehack.net";
+
+        // Try to determine the actual current domain
+        const origin = req.headers.get("origin");
+        const host = req.headers.get("host"); // e.g. "bytehack.net"
+        const forwardedHost = req.headers.get("x-forwarded-host");
+
+        if (origin) {
+            appUrl = origin;
+        } else if (forwardedHost) {
+            appUrl = `https://${forwardedHost}`;
+        } else if (host && !host.includes("localhost")) {
+            appUrl = `https://${host}`;
+        }
+
+        appUrl = appUrl.replace(/\/$/, "");
+
         const { data, error } = await supabaseAdmin.auth.admin.generateLink({
             type: "recovery",
             email,
@@ -78,10 +93,10 @@ export async function POST(req: Request) {
         const urlObj = new URL(action_link);
         const token = urlObj.searchParams.get('token');
         const type = urlObj.searchParams.get('type');
-        const redirect_to = urlObj.searchParams.get('redirect_to');
+        // We explicitly ignore the redirect_to from generateLink to avoid localhost leakage
+        // The reset-proxy endpoint will force the correct redirect anyway
 
-
-        const maskedLink = `${appUrl}/api/auth/reset-proxy?token=${token}&type=${type}&redirect_to=${encodeURIComponent(redirect_to || '')}`;
+        const maskedLink = `${appUrl}/api/auth/reset-proxy?token=${token}&type=${type}`;
 
 
         await sendPasswordResetEmail(email, maskedLink, {

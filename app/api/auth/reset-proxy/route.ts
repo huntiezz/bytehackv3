@@ -4,7 +4,6 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const token = searchParams.get("token");
     const type = searchParams.get("type");
-    const redirect_to = searchParams.get("redirect_to");
 
     if (!token || !type) {
         return NextResponse.redirect(new URL('/login?error=invalid_link', request.url));
