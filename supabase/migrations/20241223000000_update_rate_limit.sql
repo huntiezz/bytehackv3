@@ -1,24 +1,14 @@
 -- Create a table for rate limiting
 CREATE TABLE IF NOT EXISTS rate_limits (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  key TEXT NOT NULL,
+  key TEXT NOT NULL, -- e.g. "reaction:userid:postid" or "comment:userid"
   last_action TIMESTAMPTZ DEFAULT NOW(),
   count INTEGER DEFAULT 1,
   expires_at TIMESTAMPTZ NOT NULL
 );
 
--- Ensure unique constraint on key (CRITICAL for atomic rate limiting)
-DO $$ 
-BEGIN 
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'rate_limits_key_unique') THEN
-        -- Clean up duplicates first if any exist
-        DELETE FROM rate_limits a USING rate_limits b WHERE a.key = b.key AND a.last_action < b.last_action;
-        
-        ALTER TABLE rate_limits ADD CONSTRAINT rate_limits_key_unique UNIQUE (key);
-    END IF;
-END $$;
-
--- Index for cleanup
+-- Index for cleanup and lookup
+CREATE INDEX IF NOT EXISTS rate_limits_key_idx ON rate_limits (key);
 CREATE INDEX IF NOT EXISTS rate_limits_expires_at_idx ON rate_limits (expires_at);
 
 -- Function to clean up expired limits (can be called periodically or lazily)

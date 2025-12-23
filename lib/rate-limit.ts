@@ -6,67 +6,34 @@ interface RateLimitResult {
     reset: number;
 }
 
+// Use Postgres function for atomic rate limiting to prevent race conditions
 export async function rateLimit(key: string, limit: number, windowSeconds: number, cost: number = 1): Promise<RateLimitResult> {
     const supabase = await createClient();
-    const now = Date.now();
-    const windowMs = windowSeconds * 1000;
 
-    const { data: bucket, error: fetchError } = await supabase
-        .from('rate_limits')
-        .select('*')
-        .eq('key', key)
-        .single();
+    // Call the atomic RPC function
+    const { data, error } = await supabase.rpc('check_rate_limit', {
+        rate_key: key,
+        rate_limit: limit,
+        window_seconds: windowSeconds,
+        cost_val: cost
+    });
 
-    if (fetchError && fetchError.code !== 'PGRST116') {
-        return { success: true, remaining: 1, reset: now + windowMs };
+    if (error) {
+        // Fallback to allow if DB fails (fail open) or closed?
+        console.error("Rate limit RPC error:", error);
+        // Fail open to avoid blocking legit users on DB error, but for security maybe fail closed?
+        // User wants MAX security.
+        return { success: false, remaining: 0, reset: Date.now() + 60000 };
     }
 
-    let tokens = limit;
-    let lastRefill = now;
-
-    if (bucket) {
-        const timePassed = now - new Date(bucket.last_refill).getTime();
-        const tokensToAdd = Math.floor(timePassed * (limit / windowMs));
-
-        tokens = Math.min(limit, bucket.tokens + tokensToAdd);
-        lastRefill = bucket.last_refill;
-    }
-
-    if (bucket && new Date(bucket.expires_at).getTime() > now) {
-        if (bucket.count + cost > limit) {
-            return {
-                success: false,
-                remaining: 0,
-                reset: new Date(bucket.expires_at).getTime()
-            };
-        }
-
-        await supabase
-            .from('rate_limits')
-            .update({ count: bucket.count + cost })
-            .eq('id', bucket.id);
-
+    if (data) {
         return {
-            success: true,
-            remaining: limit - (bucket.count + cost),
-            reset: new Date(bucket.expires_at).getTime()
-        };
-    } else {
-        const expiresAt = new Date(now + windowMs).toISOString();
-
-        const { error: upsertError } = await supabase
-            .from('rate_limits')
-            .upsert({
-                key,
-                count: cost,
-                expires_at: expiresAt,
-            }, { onConflict: 'key' });
-
-        return {
-            success: true,
-            remaining: limit - cost,
-            reset: now + windowMs
+            success: data.success,
+            remaining: data.remaining,
+            reset: new Date(data.reset_time).getTime()
         };
     }
+
+    return { success: false, remaining: 0, reset: Date.now() };
 }
 
