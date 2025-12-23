@@ -60,6 +60,7 @@ export async function POST(req: Request) {
             });
         }
 
+        // Server-side 5% chance. This cannot be influenced by the client request.
         const isLucky = Math.random() < 0.05;
         let inviteCode: string | null = null;
 
