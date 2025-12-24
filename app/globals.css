@@ -89,7 +89,7 @@
     @apply bg-background text-foreground;
   }
 
-  /* ProggyClean font rendering */
+  /* proggyClean font rendering - dawg i needa remove this shit ugly afs*/
   .font-proggy {
     image-rendering: pixelated;
     -webkit-font-smoothing: none;
@@ -98,14 +98,14 @@
     line-height: 1.6;
   }
 
-  /* Mobile optimizations */
+  /*mMobile optimizations it lwk worked twizzy we gooood */
   @media (max-width: 768px) {
     body {
       font-size: 14px;
     }
   }
 
-  /* Hide navbar on profile pages */
+  /* hide navbar on profile pages - needa revert, js hella lazy*/
   body:has(.profile-page)>nav,
   body:has(.profile-page)>header,
   body:has(.profile-page) nav,
