@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Shield, Award, Mail, Calendar, Hash, Activity } from "lucide-react";
+import { Shield, Award, Mail, Calendar, Hash, Activity, Coins } from "lucide-react";
 import { BADGES_CONFIG } from "@/lib/badges";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
@@ -25,6 +25,7 @@ export function AdminUserEditSheet({ user, isOpen, onClose, isCurrentUserAdmin }
     const [role, setRole] = useState(user?.role || "user");
     const [isAdmin, setIsAdmin] = useState(user?.is_admin || false);
     const [isLoading, setIsLoading] = useState(false);
+    const [coinAmount, setCoinAmount] = useState("");
     const router = useRouter();
 
     useEffect(() => {
@@ -101,6 +102,32 @@ export function AdminUserEditSheet({ user, isOpen, onClose, isCurrentUserAdmin }
             router.refresh();
         } catch (error) {
             toast.error("Failed to update badges");
+        }
+    };
+
+    const handleAddCoins = async () => {
+        if (!coinAmount || isNaN(parseInt(coinAmount))) {
+            toast.error("Invalid amount");
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const res = await fetch("/api/admin/add-coins", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: user.id, amount: parseInt(coinAmount) }),
+            });
+
+            if (!res.ok) throw new Error("Failed to add coins");
+
+            toast.success(`added ${coinAmount} coins`);
+            setCoinAmount("");
+            router.refresh();
+        } catch (error) {
+            toast.error("Failed to add coins");
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -189,6 +216,37 @@ export function AdminUserEditSheet({ user, isOpen, onClose, isCurrentUserAdmin }
                                     </Button>
                                 )
                             })}
+                        </div>
+                    </div>
+
+                    {/* Coin Management */}
+                    <div className="space-y-4">
+                        <h4 className="flex items-center gap-2 font-semibold text-white/80">
+                            <Coins className="w-4 h-4" /> Manage Coins
+                        </h4>
+                        <div className="bg-white/5 p-4 rounded-lg border border-white/5">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-sm text-white/60">Current Balance</span>
+                                <span className="text-xl font-bold text-yellow-500 font-mono">
+                                    {user.coins || 0}
+                                </span>
+                            </div>
+                            <div className="flex gap-2">
+                                <Input
+                                    type="number"
+                                    placeholder="Amount to add (e.g. 100)"
+                                    value={coinAmount}
+                                    onChange={(e) => setCoinAmount(e.target.value)}
+                                    className="bg-black/20 border-white/10"
+                                />
+                                <Button
+                                    onClick={handleAddCoins}
+                                    disabled={isLoading || !coinAmount || !isCurrentUserAdmin}
+                                    className="bg-yellow-600 hover:bg-yellow-700 text-white font-bold"
+                                >
+                                    Add
+                                </Button>
+                            </div>
                         </div>
                     </div>
 
