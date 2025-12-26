@@ -109,11 +109,85 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
         };
     }, [match.id, supabase, currentUser]);
 
-    // Track mic state changes
+    // Track mic state changes with real audio analysis
     useEffect(() => {
-        if (channel && currentUser) {
-            channel.track({ is_speaking: micEnabled, user_id: currentUser.id });
-        }
+        let audioContext: AudioContext | null = null;
+        let analyser: AnalyserNode | null = null;
+        let microphone: MediaStreamAudioSourceNode | null = null;
+        let stream: MediaStream | null = null;
+        let animationFrame: number;
+        let isSpeaking = false;
+        let lastSpeakTime = 0;
+
+        const cleanup = () => {
+            if (stream) stream.getTracks().forEach(track => track.stop());
+            if (audioContext && audioContext.state !== 'closed') audioContext.close();
+            if (animationFrame) cancelAnimationFrame(animationFrame);
+
+            // Ensure we update presence to false when stopping
+            if (channel && currentUser) {
+                channel.track({ is_speaking: false, user_id: currentUser.id });
+            }
+        };
+
+        const setupAudio = async () => {
+            if (!micEnabled) {
+                cleanup();
+                return;
+            }
+
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                analyser = audioContext.createAnalyser();
+                microphone = audioContext.createMediaStreamSource(stream);
+                microphone.connect(analyser);
+                analyser.fftSize = 256;
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                const checkAudio = () => {
+                    analyser!.getByteFrequencyData(dataArray);
+                    let sum = 0;
+                    for (let i = 0; i < bufferLength; i++) {
+                        sum += dataArray[i];
+                    }
+                    const average = sum / bufferLength;
+
+                    // Threshold for "speaking" - adjust as needed (e.g. > 10)
+                    const currentlySpeaking = average > 10;
+
+                    // Debounce logic: only update if state changes significantly
+                    // We add a "hold" time to keep the indicator on for a bit after speaking stops
+                    const now = Date.now();
+                    if (currentlySpeaking) {
+                        lastSpeakTime = now;
+                    }
+
+                    // Keep speaking true if we spoke recently (e.g. within 300ms)
+                    const effectiveSpeaking = currentlySpeaking || (now - lastSpeakTime < 300);
+
+                    if (effectiveSpeaking !== isSpeaking) {
+                        isSpeaking = effectiveSpeaking;
+                        if (channel && currentUser) {
+                            channel.track({ is_speaking: isSpeaking, user_id: currentUser.id });
+                        }
+                    }
+
+                    animationFrame = requestAnimationFrame(checkAudio);
+                };
+
+                checkAudio();
+            } catch (err) {
+                console.error("Error accessing microphone:", err);
+                setMicEnabled(false);
+                toast.error("Microphone access denied");
+            }
+        };
+
+        setupAudio();
+
+        return cleanup;
     }, [micEnabled, channel, currentUser]);
 
     // Handle local stream capture (Simulation of "Force Stream")
@@ -413,7 +487,7 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                                 className={cn("flex flex-col h-auto py-2 border-white/5", betSide === 'player1' ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20" : "bg-white/5 hover:bg-white/10 text-zinc-400")}
                                 onClick={() => setBetSide('player1')}
                             >
-                                <span className="text-[10px] uppercase font-bold text-white/50 mb-0.5">Player 1</span>
+                                <span className="text-[10px] uppercase font-bold text-white/50 mb-0.5 truncate w-full text-center">{match.player1?.username || 'Player 1'}</span>
                                 <span className="font-bold text-sm">x1.5</span>
                             </Button>
                             <Button
@@ -422,7 +496,7 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                                 className={cn("flex flex-col h-auto py-2 border-white/5", betSide === 'player2' ? "bg-purple-500/20 border-purple-500/50 text-purple-400 hover:bg-purple-500/20" : "bg-white/5 hover:bg-white/10 text-zinc-400")}
                                 onClick={() => setBetSide('player2')}
                             >
-                                <span className="text-[10px] uppercase font-bold text-white/50 mb-0.5">Player 2</span>
+                                <span className="text-[10px] uppercase font-bold text-white/50 mb-0.5 truncate w-full text-center">{match.player2?.username || 'Player 2'}</span>
                                 <span className="font-bold text-sm">x1.9</span>
                             </Button>
                         </div>
