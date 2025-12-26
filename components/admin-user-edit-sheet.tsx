@@ -26,12 +26,36 @@ export function AdminUserEditSheet({ user, isOpen, onClose, isCurrentUserAdmin }
     const [isAdmin, setIsAdmin] = useState(user?.is_admin || false);
     const [isLoading, setIsLoading] = useState(false);
     const [coinAmount, setCoinAmount] = useState("");
+    const [coins, setCoins] = useState(user?.coins || 0);
     const router = useRouter();
 
     useEffect(() => {
         if (user) {
             setRole(user.role || "user");
             setIsAdmin(user.is_admin || false);
+            // Initialize with prop but fetch latest
+            setCoins(user.coins || 0);
+
+            // Fetch fresh profile data to get accurate coins
+            const fetchProfile = async () => {
+                try {
+                    const { createClient } = await import("@/lib/supabase/client");
+                    const supabase = createClient();
+                    const { data, error } = await supabase
+                        .from('profiles')
+                        .select('coins')
+                        .eq('id', user.id)
+                        .single();
+
+                    if (data && !error) {
+                        setCoins(data.coins || 0);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch fresh profile coins", e);
+                }
+            };
+
+            fetchProfile();
         }
     }, [user]);
 
@@ -121,7 +145,9 @@ export function AdminUserEditSheet({ user, isOpen, onClose, isCurrentUserAdmin }
 
             if (!res.ok) throw new Error("Failed to add coins");
 
+            const addedAmount = parseInt(coinAmount);
             toast.success(`added ${coinAmount} coins`);
+            setCoins((prev: number) => prev + addedAmount);
             setCoinAmount("");
             router.refresh();
         } catch (error) {
@@ -228,7 +254,7 @@ export function AdminUserEditSheet({ user, isOpen, onClose, isCurrentUserAdmin }
                             <div className="flex items-center justify-between mb-4">
                                 <span className="text-sm text-white/60">Current Balance</span>
                                 <span className="text-xl font-bold text-yellow-500 font-mono">
-                                    {user.coins || 0}
+                                    {coins}
                                 </span>
                             </div>
                             <div className="flex gap-2">

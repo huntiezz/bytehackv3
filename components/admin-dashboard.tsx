@@ -52,6 +52,7 @@ export function AdminDashboard({
     const filteredUsers = recentUsers.filter(u =>
         u.username?.toLowerCase().includes(userSearch.toLowerCase()) ||
         u.display_name?.toLowerCase().includes(userSearch.toLowerCase()) ||
+        u.email?.toLowerCase().includes(userSearch.toLowerCase()) ||
         u.id?.toLowerCase().includes(userSearch.toLowerCase())
     );
 
@@ -150,7 +151,7 @@ export function AdminDashboard({
                     {/* Sidebar Navigation */}
                     <aside className="w-full lg:w-64 flex-shrink-0">
                         <div className="mb-8 px-6">
-                            <div className="text-2xl font-bold tracking-tighter">BYTEHACK</div>
+                            <div className="text-2xl font-bold tracking-tighter">BYTEHACK ADMIN</div>
                             <div className="text-[10px] uppercase text-white/40 tracking-widest mt-1">Admin Panel</div>
                         </div>
 

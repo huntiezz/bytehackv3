@@ -21,25 +21,25 @@ interface NavigationProps {
 
 const tutorials = [
   { name: "All Tutorials", href: "/forum/tutorials" },
-  { name: "Beginner Guides", href: "/forum/tutorials" },
-  { name: "Advanced Techniques", href: "/forum/tutorials" },
-  { name: "Video Tutorials", href: "/forum/tutorials" },
+  { name: "Beginner Guides", href: "/forum/tutorials/beginner" },
+  { name: "Advanced Techniques", href: "/forum/tutorials/advanced" },
+  { name: "Video Tutorials", href: "/forum/tutorials/video" },
 ];
 
 const guides = [
   { name: "All Guides", href: "/forum/guides" },
-  { name: "Setup Guides", href: "/forum/guides" },
-  { name: "Workflow & Automation", href: "/forum/guides" },
-  { name: "Optimization", href: "/forum/guides" },
+  { name: "Setup Guides", href: "/forum/guides/setup" },
+  { name: "Workflow & Automation", href: "/forum/guides/workflow" },
+  { name: "Optimization", href: "/forum/guides/optimization" },
   { name: "Game Forums", href: "/forum/games" },
   { name: "Tool Forums", href: "/forum/tools" },
 ];
 
 const antiCheatInfo = [
   { name: "All Anti-cheat", href: "/forum/anti-cheat" },
-  { name: "Bypasses", href: "/forum/anti-cheat" },
-  { name: "AC Analysis", href: "/forum/anti-cheat" },
-  { name: "Discussion", href: "/forum/anti-cheat" },
+  { name: "Bypasses", href: "/forum/anti-cheat/bypasses" },
+  { name: "AC Analysis", href: "/forum/anti-cheat/analysis" },
+  { name: "Discussion", href: "/forum/anti-cheat/discussion" },
 ];
 
 const infoLinks = [

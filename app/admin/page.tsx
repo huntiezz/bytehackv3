@@ -37,7 +37,7 @@ export default async function AdminPage() {
     );
   }
 
-  if (!user.is_admin && user.role !== "admin") {
+  if (!(user as any).is_admin && user.role !== "admin") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md w-full p-8 text-center">
@@ -48,7 +48,7 @@ export default async function AdminPage() {
               You need the <Badge variant="secondary">admin</Badge> role to access this page.
             </p>
             <p className="text-sm text-muted-foreground">
-              Current role: <Badge variant="outline">{user.role || (user.is_admin ? 'admin' : 'user')}</Badge>
+              Current role: <Badge variant="outline">{user.role || ((user as any).is_admin ? 'admin' : 'user')}</Badge>
             </p>
           </div>
           <Link href="/forum">
@@ -97,7 +97,7 @@ export default async function AdminPage() {
     supabase.from("threads").select("*", { count: "exact", head: true }),
     supabase.from("offsets").select("*", { count: "exact", head: true }),
     supabase.from("invite_codes").select("*", { count: "exact", head: true }),
-    supabase.from("profiles").select("id, username, display_name, email, created_at, is_admin, role, post_count, reaction_score, avatar_url, last_login, badges, is_banned, discord_id, discord_username").order("created_at", { ascending: false }).then(res => {
+    supabase.from("profiles").select("id, username, display_name, email, created_at, is_admin, role, post_count, reaction_score, avatar_url, badges, is_banned, discord_id, discord_username").order("created_at", { ascending: false }).then(res => {
       if (res.error) console.error("Admin Page Recent Users Error:", res.error);
       return res;
     }),

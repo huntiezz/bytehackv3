@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MonitorPlay, Send, Trophy, Users, Shield, Mic, MicOff, DollarSign, Swords, UserPlus, ArrowLeft, LogOut } from "lucide-react";
+import { MonitorPlay, Send, Trophy, Users, Shield, Mic, MicOff, DollarSign, Swords, UserPlus, ArrowLeft, LogOut, Settings2, Lock } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -28,6 +29,8 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
     const [isStreaming, setIsStreaming] = useState(false);
     const [isPlacingBet, setIsPlacingBet] = useState(false);
     const [micEnabled, setMicEnabled] = useState(false);
+    const [isMicDialogOpen, setIsMicDialogOpen] = useState(false);
+    const [micPermissionError, setMicPermissionError] = useState(false);
 
     const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
     const [channel, setChannel] = useState<ReturnType<typeof supabase.channel> | null>(null);
@@ -295,8 +298,83 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
 
     // ... (other handlers)
 
+    const requestMicAccess = async () => {
+        try {
+            setMicPermissionError(false);
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // If successful, stop immediately - we just wanted to trigger the prompt/check permission
+            stream.getTracks().forEach(t => t.stop());
+
+            // Now enable the actual feature
+            setMicEnabled(true);
+            setIsMicDialogOpen(false);
+            toast.success("Voice chat enabled");
+        } catch (err) {
+            console.error("Mic access denied:", err);
+            setMicPermissionError(true);
+            // Don't close dialog, let them retry or see instruction
+        }
+    };
+
+    const toggleMic = () => {
+        if (micEnabled) {
+            setMicEnabled(false);
+            toast.success("Voice chat disabled");
+        } else {
+            setIsMicDialogOpen(true);
+        }
+    };
+
     return (
-        <div className="flex flex-col h-[calc(100vh-220px)] min-h-[600px] overflow-hidden bg-black text-white selection:bg-white/20">
+        <div className="flex flex-col h-[calc(100vh-64px)] min-h-[600px] overflow-hidden bg-black text-white selection:bg-white/20">
+            <Dialog open={isMicDialogOpen} onOpenChange={setIsMicDialogOpen}>
+                <DialogContent className="bg-[#0A0A0A] border-white/10 text-white sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-xl">
+                            <Mic className="w-5 h-5 text-white" />
+                            Enable Voice Chat
+                        </DialogTitle>
+                        <DialogDescription className="text-zinc-400">
+                            You need to grant microphone access to speak with your opponent.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {!micPermissionError ? (
+                        <div className="py-6 flex flex-col items-center justify-center gap-4 text-center">
+                            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center animate-pulse">
+                                <Mic className="w-8 h-8 text-white/50" />
+                            </div>
+                            <p className="text-sm text-zinc-500">
+                                Click below to start the permission request.
+                            </p>
+                        </div>
+                    ) : (
+                        <div className="py-6 flex flex-col items-center justify-center gap-4 text-center">
+                            <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center">
+                                <Lock className="w-8 h-8 text-red-500" />
+                            </div>
+                            <div className="space-y-2">
+                                <p className="text-red-400 font-bold">Access Denied</p>
+                                <p className="text-xs text-zinc-500 max-w-[250px] mx-auto">
+                                    Your browser has blocked microphone access. Please click the lock icon in your address bar and allow microphone access, then try again.
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
+                    <DialogFooter>
+                        {!micPermissionError ? (
+                            <Button onClick={requestMicAccess} className="w-full bg-white text-black hover:bg-zinc-200">
+                                Allow Access
+                            </Button>
+                        ) : (
+                            <Button onClick={() => setIsMicDialogOpen(false)} variant="outline" className="w-full border-white/10 hover:bg-white/5">
+                                Close
+                            </Button>
+                        )}
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
             {/* Top Bar (Keep same) */}
             <div className="h-16 border-b border-white/5 bg-[#050505] flex items-center justify-between px-6 z-20 shrink-0">
                 {/* ... (keep top bar content) */}
@@ -322,7 +400,7 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                             <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => setMicEnabled(!micEnabled)}
+                                onClick={toggleMic}
                                 className={cn("border-white/5 h-8 text-xs font-bold", micEnabled ? "bg-green-500/20 text-green-400 border-green-500/20" : "bg-white/5 text-zinc-400 hover:text-white")}
                             >
                                 {micEnabled ? <Mic className="w-3 h-3 mr-2" /> : <MicOff className="w-3 h-3 mr-2" />}
@@ -369,8 +447,8 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                             {isStreaming && isPlayer1 ? "LIVE FEED" : "OFFLINE"}
                         </div>
 
-                        <div className="w-full h-full flex items-center justify-center relative">
-                            <video ref={videoRef1} autoPlay muted className="max-w-full max-h-full object-contain" />
+                        <div className="w-full h-full flex items-center justify-center relative bg-black/50 overflow-hidden p-2">
+                            <video ref={videoRef1} autoPlay muted className="max-w-full max-h-full h-auto object-contain rounded-lg shadow-2xl" />
                             {!isStreaming && (
                                 <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 pointer-events-none opacity-20">
                                     <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center border border-white/5">
@@ -405,8 +483,8 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                                     {isStreaming && isPlayer2 ? "LIVE FEED" : "OFFLINE"}
                                 </div>
 
-                                <div className="w-full h-full flex items-center justify-center relative">
-                                    <video ref={videoRef2} autoPlay muted className="max-w-full max-h-full object-contain" />
+                                <div className="w-full h-full flex items-center justify-center relative bg-black/50 overflow-hidden p-2">
+                                    <video ref={videoRef2} autoPlay muted className="max-w-full max-h-full h-auto object-contain rounded-lg shadow-2xl" />
                                     {!isStreaming && (
                                         <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 pointer-events-none opacity-20">
                                             <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center border border-white/5">
