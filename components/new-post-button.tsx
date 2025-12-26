@@ -166,12 +166,32 @@ export function NewPostButton() {
   };
 
   const renderPreview = (text: string) => {
-    let html = text
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    // Basic escaping of core HTML characters first
+    let escaped = text
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    // Helper to validate URLs to prevent javascript: or otras schemes
+    const safeUrl = (url: string) => {
+      const trimmed = url.trim();
+      if (trimmed.toLowerCase().startsWith('javascript:') ||
+        trimmed.toLowerCase().startsWith('data:') ||
+        trimmed.toLowerCase().startsWith('vbscript:')) {
+        return '#';
+      }
+      return trimmed;
+    };
+
+    let html = escaped
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" class="max-w-full rounded-md mt-2 border border-zinc-800" />')
-      .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">$1</a>')
+      .replace(/!\[(.*?)\]\((.*?)\)/g, (_, alt, url) =>
+        `<img src="${safeUrl(url)}" alt="${alt}" class="max-w-full rounded-md mt-2 border border-zinc-800" />`
+      )
+      .replace(/\[(.*?)\]\((.*?)\)/g, (_, label, url) =>
+        `<a href="${safeUrl(url)}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:underline">${label}</a>`
+      )
       .replace(/^\s*-\s+(.*)/gm, '<li class="ml-4 list-disc">$1</li>')
       .replace(/^>\s+(.*)/gm, '<blockquote class="border-l-2 border-zinc-500 pl-4 italic my-2 text-zinc-400">$1</blockquote>')
       .replace(/\n/g, '<br />');
