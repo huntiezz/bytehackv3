@@ -46,46 +46,56 @@ async function handleProxy(req: NextRequest) {
         return NextResponse.json({ error: "Too many requests" }, { status: 429 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!.replace(/\/$/, '');
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+    // ENFORCE ANON KEY for public proxy to respect RLS
+    const supabaseKey = supabaseAnonKey;
 
     // 1. ORIGIN & SECURITY VERIFICATION
     const origin = req.headers.get('origin');
     const referer = req.headers.get('referer');
     const host = req.headers.get('host');
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || `https://${host}`;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || (host ? `https://${host}` : '');
 
-    if (process.env.NODE_ENV === 'production') {
-        const allowedHost = new URL(appUrl).host;
+    if (process.env.NODE_ENV === 'production' && appUrl) {
+        try {
+            const allowedHost = new URL(appUrl).host;
 
-        // Verify Origin if present
-        if (origin) {
-            const originHost = new URL(origin).host;
-            if (originHost !== allowedHost && !originHost.endsWith(`.${allowedHost}`)) {
-                return NextResponse.json({ error: "Unauthorized Origin" }, { status: 403 });
+            if (origin) {
+                const originHost = new URL(origin).host;
+                if (originHost !== allowedHost && !originHost.endsWith(`.${allowedHost}`)) {
+                    return NextResponse.json({ error: "Unauthorized Origin" }, { status: 403 });
+                }
             }
-        }
 
-        // Verify Referer if present
-        if (referer) {
-            const refererHost = new URL(referer).host;
-            if (refererHost !== allowedHost && !refererHost.endsWith(`.${allowedHost}`)) {
-                return NextResponse.json({ error: "Unauthorized Referer" }, { status: 403 });
+            if (referer) {
+                const refererHost = new URL(referer).host;
+                if (refererHost !== allowedHost && !refererHost.endsWith(`.${allowedHost}`)) {
+                    return NextResponse.json({ error: "Unauthorized Referer" }, { status: 403 });
+                }
             }
+        } catch (e) {
+            // Silently ignore URL parsing errors for non-standard referers
         }
     }
 
     // 2. CONSTRUCT UPSTREAM URL
-    const path = req.nextUrl.pathname.replace('/api/supabase', '');
+    // Get everything after /api/supabase
+    const path = req.nextUrl.pathname.split('/api/supabase')[1] || '/';
 
-    // We strictly proxy to Supabase to prevent SSRF
-    const url = new URL(path + req.nextUrl.search, supabaseUrl).toString();
+    // Reconstruct query parameters, stripping 'apikey' to avoid conflicts with headers
+    const searchParams = new URLSearchParams(req.nextUrl.search);
+    searchParams.delete('apikey');
+    const search = searchParams.toString();
+
+    // Final upstream URL
+    const url = `${supabaseUrl}${path}${search ? '?' + search : ''}`;
 
     // 3. CLEAN & INJECT HEADERS
     const headers = new Headers();
     req.headers.forEach((value, key) => {
         const k = key.toLowerCase();
-        // Strip headers that should not be forwarded or are handled by the fetch agent
         if (![
             'host',
             'cookie',
@@ -104,8 +114,6 @@ async function handleProxy(req: NextRequest) {
         }
     });
 
-    // Enforce the API Key on the server-side
-    // This ensures that even if the client sends a wrong/dummy key, the proxy uses the correct one.
     headers.set('apikey', supabaseKey);
     if (!headers.has('Authorization')) {
         headers.set('Authorization', `Bearer ${supabaseKey}`);
@@ -135,7 +143,6 @@ async function handleProxy(req: NextRequest) {
             if (k === 'set-cookie') {
                 const cookies = res.headers.getSetCookie();
                 cookies.forEach(cookie => {
-                    // Make cookies more secure and strip Supabase domain
                     let cleanCookie = cookie.replace(/Domain=[^;]+;?/, '');
                     if (!cleanCookie.includes('Secure')) cleanCookie += '; Secure';
                     if (!cleanCookie.includes('HttpOnly')) cleanCookie += '; HttpOnly';
@@ -154,7 +161,6 @@ async function handleProxy(req: NextRequest) {
             }
         });
 
-        // Add our own security headers
         responseHeaders.set('X-Content-Type-Options', 'nosniff');
         responseHeaders.set('X-Frame-Options', 'DENY');
 
