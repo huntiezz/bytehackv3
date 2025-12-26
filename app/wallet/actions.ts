@@ -85,7 +85,8 @@ export async function buyInviteCode(userId: string) {
         .from("invite_codes")
         .insert({
             code: code,
-            used: false,
+            uses: 0,
+            max_uses: 1,
             created_by: userId
         })
         .select()

@@ -90,9 +90,9 @@ export default async function WalletPage() {
                                 <div key={code.code} className="bg-[#050505] border border-white/5 rounded-2xl p-5 flex items-center justify-between group hover:border-white/10 transition-all duration-300">
                                     <div>
                                         <div className="flex items-center gap-2 mb-1.5">
-                                            <div className={`w-1.5 h-1.5 rounded-full ${code.used ? 'bg-red-500' : 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]'}`} />
+                                            <div className={`w-1.5 h-1.5 rounded-full ${(code.max_uses !== null && code.uses >= code.max_uses) ? 'bg-red-500' : 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]'}`} />
                                             <span className="text-[10px] uppercase font-bold tracking-wider text-zinc-500">
-                                                {code.used ? 'Redeemed' : 'Active'}
+                                                {(code.max_uses !== null && code.uses >= code.max_uses) ? 'Redeemed' : 'Active'}
                                             </span>
                                         </div>
                                         <div className="text-lg font-bold font-mono tracking-widest text-white mb-1 group-hover:text-primary transition-colors">

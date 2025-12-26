@@ -16,7 +16,7 @@ import { useEffect } from "react";
 const VALIDATION_RULES = {
   USERNAME: {
     MAX_LENGTH: 14,
-    MIN_LENGTH: 3,
+    MIN_LENGTH: 1,
     PATTERN: /^[a-zA-Z0-9._-]+$/,
   },
   DISPLAY_NAME: {
