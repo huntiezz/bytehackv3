@@ -296,7 +296,7 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
     // ... (other handlers)
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden bg-black text-white selection:bg-white/20">
+        <div className="flex flex-col h-[calc(100vh-220px)] min-h-[600px] overflow-hidden bg-black text-white selection:bg-white/20">
             {/* Top Bar (Keep same) */}
             <div className="h-16 border-b border-white/5 bg-[#050505] flex items-center justify-between px-6 z-20 shrink-0">
                 {/* ... (keep top bar content) */}
