@@ -21,7 +21,8 @@ const VALIDATION_RULES = {
   },
   DISPLAY_NAME: {
     MAX_LENGTH: 14,
-    PATTERN: /^[a-zA-Z0-9._\- ]+$/,
+    // Support Unicode letters while keeping the restricted symbol set
+    PATTERN: /^[\p{L}0-9._\- ]+$/u,
     MAX_SPACES: 1,
   },
   BIO: {

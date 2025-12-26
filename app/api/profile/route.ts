@@ -11,7 +11,7 @@ const VALIDATION_RULES = {
   },
   DISPLAY_NAME: {
     MAX_LENGTH: 14,
-    PATTERN: /^[a-zA-Z0-9._\- ]+$/,
+    PATTERN: /^[\p{L}0-9._\- ]+$/u,
     MAX_SPACES: 1,
   },
   BIO: {
