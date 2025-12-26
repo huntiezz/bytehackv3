@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, ShoppingBag, Settings, Code2, LogOut, Download, Shield, ChevronDown, Folder, BookOpen, Info, ArrowUpRight } from "lucide-react";
+import { MessageSquare, ShoppingBag, Settings, Code2, LogOut, Download, Shield, ChevronDown, Folder, BookOpen, Info, ArrowUpRight, Swords } from "lucide-react";
 import Image from "next/image";
 import { MobileNav } from "@/components/mobile-nav";
 import { useState, useEffect, useRef } from "react";
@@ -168,6 +168,10 @@ export function Navigation({ user, isAdmin = false, isOffsetUpdater = false }: N
 
             <NavItem href="/offsets" icon={Folder} isActive={pathname?.startsWith('/offsets')}>
               Offsets
+            </NavItem>
+
+            <NavItem href="/code-off" icon={Swords} isActive={pathname?.startsWith('/code-off')}>
+              Code Off
             </NavItem>
 
             <NavDropdown
