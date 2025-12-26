@@ -11,6 +11,7 @@ import { UserNavDropdown } from "@/components/user-nav-dropdown";
 import { NotificationsPopover } from "@/components/notifications-popover";
 import { usePathname } from "next/navigation";
 import { SearchBar } from "@/components/search-bar";
+import { SnowToggle } from "@/components/snow-toggle";
 
 interface NavigationProps {
   user?: any;
@@ -179,6 +180,8 @@ export function Navigation({ user, isAdmin = false, isOffsetUpdater = false }: N
 
           {/* Right Side: User & Mobile */}
           <div className="flex items-center gap-4">
+            <SnowToggle />
+
             {/* Mobile Toggle */}
             <div className="md:hidden">
               <MobileNav user={user} isAdmin={isAdmin} isOffsetUpdater={isOffsetUpdater} />

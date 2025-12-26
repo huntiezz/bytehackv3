@@ -453,22 +453,24 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                     </h1>
 
                     <div className="flex items-center gap-3 text-sm text-white/60 flex-wrap">
-                      {post.author.avatar_url && (
-                        <img
-                          src={post.author.avatar_url}
-                          alt={post.author.username}
-                          className="w-6 h-6 rounded-full border border-white/10"
+                      <Link href={`/user/${post.author.username}`} className="flex items-center gap-3 hover:text-white transition-colors">
+                        {post.author.avatar_url && (
+                          <img
+                            src={post.author.avatar_url}
+                            alt={post.author.username}
+                            className="w-6 h-6 rounded-full border border-white/10"
+                          />
+                        )}
+                        <StyledUsername
+                          name={post.author.display_name || post.author.username}
+                          nameColor={undefined}
+                          fontStyle={undefined}
+                          nameEffect={post.author.effect_label}
+                          level={0}
+                          role={post.author.is_admin ? "admin" : "user"}
+                          isOP={true}
                         />
-                      )}
-                      <StyledUsername
-                        name={post.author.display_name || post.author.username}
-                        nameColor={undefined}
-                        fontStyle={undefined}
-                        nameEffect={post.author.effect_label}
-                        level={0}
-                        role={post.author.is_admin ? "admin" : "user"}
-                        isOP={true}
-                      />
+                      </Link>
 
                       {post.pinned && (
                         <Badge className="bg-[#FFD700]/10 text-[#FFD700] hover:bg-[#FFD700]/20 border border-[#FFD700]/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-sm h-5">

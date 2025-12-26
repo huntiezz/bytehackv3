@@ -5,7 +5,7 @@ import { sanitizeInput } from "@/lib/security";
 
 const VALIDATION_RULES = {
   USERNAME: {
-    MIN_LENGTH: 3,
+    MIN_LENGTH: 1,
     MAX_LENGTH: 14,
     PATTERN: /^[a-zA-Z0-9._-]+$/,
   },

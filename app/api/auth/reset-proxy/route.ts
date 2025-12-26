@@ -10,17 +10,22 @@ export async function GET(request: Request) {
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const requestUrl = new URL(request.url);
-
     // Robust detection of the actual public domain
-    let appUrl = requestUrl.origin;
-    const forwardedHost = request.headers.get("x-forwarded-host");
-    const hostHeader = request.headers.get("host");
+    let appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
-    if (forwardedHost) {
-        appUrl = `https://${forwardedHost}`;
-    } else if (hostHeader && !hostHeader.includes("localhost")) {
-        appUrl = `https://${hostHeader}`;
+    // If env var is missing or localhost, try to detect from headers
+    if (!appUrl || appUrl.includes("localhost")) {
+        const requestUrl = new URL(request.url);
+        appUrl = requestUrl.origin;
+
+        const forwardedHost = request.headers.get("x-forwarded-host");
+        const hostHeader = request.headers.get("host");
+
+        if (forwardedHost) {
+            appUrl = `https://${forwardedHost}`;
+        } else if (hostHeader && !hostHeader.includes("localhost")) {
+            appUrl = `https://${hostHeader}`;
+        }
     }
 
     appUrl = appUrl.replace(/\/$/, "");

@@ -1,11 +1,29 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function Snowfall() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const [enabled, setEnabled] = useState(true);
 
     useEffect(() => {
+        const checkEnabled = () => {
+            const stored = localStorage.getItem("snow-enabled");
+            // Default is enabled if not present or "true"
+            setEnabled(stored !== "false");
+        };
+
+        checkEnabled();
+
+        const handleToggle = () => checkEnabled();
+        window.addEventListener("snow-toggle", handleToggle);
+
+        return () => window.removeEventListener("snow-toggle", handleToggle);
+    }, []);
+
+    useEffect(() => {
+        if (!enabled) return;
+
         const canvas = canvasRef.current;
         if (!canvas) return;
 
@@ -79,7 +97,9 @@ export function Snowfall() {
             window.removeEventListener("resize", setSize);
             cancelAnimationFrame(animationId);
         };
-    }, []);
+    }, [enabled]);
+
+    if (!enabled) return null;
 
     return (
         <canvas

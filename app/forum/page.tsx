@@ -285,101 +285,101 @@ export default async function ForumPage({
                       <NewPostButton />
                     </div>
                   )}
-                  
+
                   <div className="bg-[#050505] border border-white/5 rounded-[40px] p-8 mb-8">
-                  {/* Category Header */}
-                  <div className="mb-6">
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant="secondary" className="bg-[#111] text-white hover:bg-[#161616] border border-white/5 px-4 py-1.5 rounded-full text-sm font-bold tracking-tight">
-                        {section.title}
-                      </Badge>
+                    {/* Category Header */}
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant="secondary" className="bg-[#111] text-white hover:bg-[#161616] border border-white/5 px-4 py-1.5 rounded-full text-sm font-bold tracking-tight">
+                          {section.title}
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs font-medium text-white/20 px-1">
+                          Showing {Math.min(section.posts.length, 3)}-{Math.min(section.posts.length, 3)} of {section.posts.length} threads
+                        </div>
+                        <div className="flex items-center gap-4 text-xs font-bold text-white/30 uppercase tracking-widest pr-4">
+                          <span>{section.posts.length} Threads</span>
+                          <span>{section.posts.reduce((acc, p) => acc + (p.view_count ?? 0), 0)} Views</span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="flex items-center justify-between">
-                      <div className="text-xs font-medium text-white/20 px-1">
-                        Showing {Math.min(section.posts.length, 3)}-{Math.min(section.posts.length, 3)} of {section.posts.length} threads
-                      </div>
-                      <div className="flex items-center gap-4 text-xs font-bold text-white/30 uppercase tracking-widest pr-4">
-                        <span>{section.posts.length} Threads</span>
-                        <span>{section.posts.reduce((acc, p) => acc + (p.view_count ?? 0), 0)} Views</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Posts List */}
-                  <div className="space-y-3">
-                    {section.posts.length === 0 ? (
-                      <div className="p-12 text-center text-white/20 text-sm font-medium border border-dashed border-white/5 rounded-[24px]">
-                        No threads in this section yet.
-                      </div>
-                    ) : (
-                      section.posts.slice(0, 3).map((post: any) => (
-                        <a key={post.id} href={`/forum/${post.id}`} className="block group">
-                          <div className="p-4 sm:p-5 rounded-[28px] bg-[#0A0A0A] border border-white/5 hover:border-white/10 transition-all duration-200">
-                            <div className="flex items-center justify-between gap-4">
-                              <div className="flex items-center gap-5 min-w-0 flex-1">
-                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#111] flex items-center justify-center flex-shrink-0 text-white/30 hover:text-white transition-colors border border-white/5">
-                                  <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
+                    {/* Posts List */}
+                    <div className="space-y-3">
+                      {section.posts.length === 0 ? (
+                        <div className="p-12 text-center text-white/20 text-sm font-medium border border-dashed border-white/5 rounded-[24px]">
+                          No threads in this section yet.
+                        </div>
+                      ) : (
+                        section.posts.slice(0, 3).map((post: any) => (
+                          <a key={post.id} href={`/forum/${post.id}`} className="block group">
+                            <div className="p-4 sm:p-5 rounded-[28px] bg-[#0A0A0A] border border-white/5 hover:border-white/10 transition-all duration-200">
+                              <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-5 min-w-0 flex-1">
+                                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-[#111] flex items-center justify-center flex-shrink-0 text-white/30 hover:text-white transition-colors border border-white/5">
+                                    <MessageSquare className="w-4 h-4 sm:w-5 sm:h-5" />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <h3 className="text-[15px] sm:text-base font-bold text-white group-hover:text-white/90 truncate">
+                                        {post.title}
+                                      </h3>
+                                      {post.pinned && (
+                                        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/20 text-[#FFD700]" title="Pinned Thread">
+                                          <Pin className="w-3 h-3 fill-current transform rotate-45" />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs font-medium text-white/40">
+                                      <span className="text-white/50 uppercase tracking-wide text-[10px] font-bold">by</span>
+                                      <span className="text-white/70 hover:text-white transition-colors truncate max-w-[100px]">
+                                        {post.author?.username || 'Unknown'}
+                                      </span>
+                                    </div>
+                                  </div>
                                 </div>
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 mb-1">
-                                    <h3 className="text-[15px] sm:text-base font-bold text-white group-hover:text-white/90 truncate">
-                                      {post.title}
-                                    </h3>
-                                    {post.pinned && (
-                                      <div className="flex items-center justify-center w-5 h-5 rounded-full bg-[#FFD700]/10 border border-[#FFD700]/20 text-[#FFD700]" title="Pinned Thread">
-                                        <Pin className="w-3 h-3 fill-current transform rotate-45" />
-                                      </div>
+
+                                <div className="flex items-center gap-6 sm:gap-8 flex-shrink-0 px-2 sm:px-4">
+                                  <div className="text-center w-10 sm:w-12 hidden sm:block">
+                                    <div className="text-white font-bold">{post.thread_replies?.[0]?.count ?? post.replies_count ?? 0}</div>
+                                    <div className="text-[10px] text-white/30 font-bold uppercase tracking-wider mt-0.5">Replies</div>
+                                  </div>
+                                  <div className="text-center w-10 sm:w-12 hidden sm:block">
+                                    <div className="text-white font-bold">{post.view_count ?? 0}</div>
+                                    <div className="text-[10px] text-white/30 font-bold uppercase tracking-wider mt-0.5">Views</div>
+                                  </div>
+                                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#151515] flex items-center justify-center text-xs font-bold text-white/60 border border-white/5 ml-2 overflow-hidden">
+                                    {post.author?.avatar_url ? (
+                                      <img src={post.author.avatar_url} alt={post.author.username} className="w-full h-full object-cover" />
+                                    ) : (
+                                      post.author?.username?.[0]?.toUpperCase() || 'U'
                                     )}
                                   </div>
-                                  <div className="flex items-center gap-2 text-xs font-medium text-white/40">
-                                    <span className="text-white/50 uppercase tracking-wide text-[10px] font-bold">by</span>
-                                    <span className="text-white/70 hover:text-white transition-colors truncate max-w-[100px]">
-                                      {post.author?.username || 'Unknown'}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-6 sm:gap-8 flex-shrink-0 px-2 sm:px-4">
-                                <div className="text-center w-10 sm:w-12 hidden sm:block">
-                                  <div className="text-white font-bold">{post.thread_replies?.[0]?.count ?? post.replies_count ?? 0}</div>
-                                  <div className="text-[10px] text-white/30 font-bold uppercase tracking-wider mt-0.5">Replies</div>
-                                </div>
-                                <div className="text-center w-10 sm:w-12 hidden sm:block">
-                                  <div className="text-white font-bold">{post.view_count ?? 0}</div>
-                                  <div className="text-[10px] text-white/30 font-bold uppercase tracking-wider mt-0.5">Views</div>
-                                </div>
-                                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#151515] flex items-center justify-center text-xs font-bold text-white/60 border border-white/5 ml-2 overflow-hidden">
-                                  {post.author?.avatar_url ? (
-                                    <img src={post.author.avatar_url} alt={post.author.username} className="w-full h-full object-cover" />
-                                  ) : (
-                                    post.author?.username?.[0]?.toUpperCase() || 'U'
-                                  )}
                                 </div>
                               </div>
                             </div>
-                          </div>
-                        </a>
-                      ))
-                    )}
-                  </div>
+                          </a>
+                        ))
+                      )}
+                    </div>
 
-                  {/* View All Button */}
-                  <div className="mt-4">
-                    <Link href={`/forum/${section.id}-discussion`} className="block w-full">
-                      <Button
-                        variant="ghost"
-                        className="w-full h-12 rounded-[24px] bg-[#0A0A0A] hover:bg-[#111] text-white/60 hover:text-white font-bold text-sm flex items-center justify-center gap-2 border border-white/5 hover:border-white/10 transition-all uppercase tracking-wide cursor-pointer"
-                      >
-                        View All {section.title}
-                        <span className="text-lg leading-none ml-1">↗</span>
-                      </Button>
-                    </Link>
+                    {/* View All Button */}
+                    <div className="mt-4">
+                      <Link href={`/forum/${section.id}-discussion`} className="block w-full">
+                        <Button
+                          variant="ghost"
+                          className="w-full h-12 rounded-[24px] bg-[#0A0A0A] hover:bg-[#111] text-white/60 hover:text-white font-bold text-sm flex items-center justify-center gap-2 border border-white/5 hover:border-white/10 transition-all uppercase tracking-wide cursor-pointer"
+                        >
+                          View All {section.title}
+                          <span className="text-lg leading-none ml-1">↗</span>
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              ))
             )}
           </div>
 
@@ -406,7 +406,7 @@ export default async function ForumPage({
                 <div className="pt-8 mt-4">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-white/30 mb-4">Latest Member</p>
                   {latestMember ? (
-                    <div className="flex items-center gap-4 group cursor-pointer">
+                    <Link href={`/user/${latestMember.username}`} className="flex items-center gap-4 group cursor-pointer block">
                       <div className="w-10 h-10 rounded-full bg-[#111] overflow-hidden relative border border-white/5 group-hover:border-white/20 transition-colors">
                         {latestMember.avatar_url ? (
                           <img src={latestMember.avatar_url} alt={latestMember.username || 'User'} className="object-cover w-full h-full" />
@@ -419,7 +419,7 @@ export default async function ForumPage({
                         <p className="text-sm text-white font-bold group-hover:text-primary transition-colors truncate max-w-[180px]">{latestMember.display_name || latestMember.username}</p>
                         <p className="text-xs text-white/40 font-medium whitespace-nowrap">{formatDistanceToNow(new Date(latestMember.created_at))} ago</p>
                       </div>
-                    </div>
+                    </Link>
                   ) : (
                     <p className="text-sm text-white/40">No members yet</p>
                   )}

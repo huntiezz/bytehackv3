@@ -25,11 +25,11 @@ async function generateHMAC(message: string, secret: string): Promise<string> {
 
 // Security configuration for post creation
 const POST_RATE_LIMITS = {
-  IP_LIMIT: 10, // 10 posts per IP per hour (was 5)
+  IP_LIMIT: 50, // 50 posts per IP per hour
   IP_WINDOW: 3600, // 1 hour
-  USER_LIMIT: 20, // 20 posts per user per hour (was 10)
+  USER_LIMIT: 50, // 50 posts per user per hour
   USER_WINDOW: 3600,
-  BURST_LIMIT: 5, // 5 posts per user per minute (was 2 per 5 min)
+  BURST_LIMIT: 10, // 10 posts per user per minute
   BURST_WINDOW: 60, // 1 minute
 };
 
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     );
 
     if (!ipRateLimit.success) {
-      const resetTime = Math.ceil((ipRateLimit.reset - Date.now()) / 1000 / 60);
+      const resetTime = Math.ceil((ipRateLimit.reset - Date.now()) / 1000 / 60) || 1;
       return NextResponse.json(
         {
           error: `Too many posts from this IP address. Please try again in ${resetTime} minutes.`,
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
         {
           status: 429,
           headers: {
-            'Retry-After': String(Math.ceil((ipRateLimit.reset - Date.now()) / 1000)),
+            'Retry-After': String(Math.ceil((ipRateLimit.reset - Date.now()) / 1000) || 60),
             'X-RateLimit-Limit': String(POST_RATE_LIMITS.IP_LIMIT),
             'X-RateLimit-Remaining': String(ipRateLimit.remaining),
             'X-RateLimit-Reset': String(ipRateLimit.reset),
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
     );
 
     if (!userRateLimit.success) {
-      const resetTime = Math.ceil((userRateLimit.reset - Date.now()) / 1000 / 60);
+      const resetTime = Math.ceil((userRateLimit.reset - Date.now()) / 1000 / 60) || 1;
       return NextResponse.json(
         {
           error: `You're posting too quickly. Please wait ${resetTime} minutes before posting again.`,
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
         {
           status: 429,
           headers: {
-            'Retry-After': String(Math.ceil((userRateLimit.reset - Date.now()) / 1000)),
+            'Retry-After': String(Math.ceil((userRateLimit.reset - Date.now()) / 1000) || 60),
             'X-RateLimit-Limit': String(POST_RATE_LIMITS.USER_LIMIT),
             'X-RateLimit-Remaining': String(userRateLimit.remaining),
             'X-RateLimit-Reset': String(userRateLimit.reset),
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
     );
 
     if (!burstLimit.success) {
-      const resetTime = Math.ceil((burstLimit.reset - Date.now()) / 1000);
+      const resetTime = Math.ceil((burstLimit.reset - Date.now()) / 1000) || 10;
       return NextResponse.json(
         {
           error: `Please slow down! Wait ${resetTime} seconds before posting again.`,
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
         {
           status: 429,
           headers: {
-            'Retry-After': String(Math.ceil((burstLimit.reset - Date.now()) / 1000)),
+            'Retry-After': String(Math.ceil((burstLimit.reset - Date.now()) / 1000) || 10),
             'X-RateLimit-Limit': String(POST_RATE_LIMITS.BURST_LIMIT),
             'X-RateLimit-Remaining': String(burstLimit.remaining),
             'X-RateLimit-Reset': String(burstLimit.reset),

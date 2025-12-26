@@ -14,11 +14,11 @@ const COMMENT_LIMITS = {
 
 // Comment rate limits
 const COMMENT_RATE_LIMITS = {
-  IP_LIMIT: 20, // 20 comments per IP per hour
+  IP_LIMIT: 100, // 100 comments per IP per hour
   IP_WINDOW: 3600, // 1 hour
-  USER_LIMIT: 30, // 30 comments per user per hour
+  USER_LIMIT: 200, // 200 comments per user per hour
   USER_WINDOW: 3600,
-  BURST_LIMIT: 5, // Max 5 comments per minute (prevents rapid spam)
+  BURST_LIMIT: 20, // Max 20 comments per minute
   BURST_WINDOW: 60, // 1 minute
 };
 
@@ -40,16 +40,16 @@ export async function POST(req: NextRequest) {
     );
 
     if (!ipRateLimit.success) {
-      const resetTime = Math.ceil((ipRateLimit.reset - Date.now()) / 1000 / 60);
+      const resetTime = Math.ceil((ipRateLimit.reset - Date.now()) / 1000 / 60) || 1;
       return NextResponse.json(
-        { 
+        {
           error: `Too many comments from this IP. Please try again in ${resetTime} minutes.`,
-          retryAfter: ipRateLimit.reset 
+          retryAfter: ipRateLimit.reset
         },
-        { 
+        {
           status: 429,
           headers: {
-            'Retry-After': String(Math.ceil((ipRateLimit.reset - Date.now()) / 1000)),
+            'Retry-After': String(Math.ceil((ipRateLimit.reset - Date.now()) / 1000) || 60),
             'X-RateLimit-Limit': String(COMMENT_RATE_LIMITS.IP_LIMIT),
             'X-RateLimit-Remaining': String(ipRateLimit.remaining),
             'X-RateLimit-Reset': String(ipRateLimit.reset),
@@ -66,16 +66,16 @@ export async function POST(req: NextRequest) {
     );
 
     if (!userRateLimit.success) {
-      const resetTime = Math.ceil((userRateLimit.reset - Date.now()) / 1000 / 60);
+      const resetTime = Math.ceil((userRateLimit.reset - Date.now()) / 1000 / 60) || 1;
       return NextResponse.json(
-        { 
+        {
           error: `You're commenting too quickly. Please wait ${resetTime} minutes.`,
-          retryAfter: userRateLimit.reset 
+          retryAfter: userRateLimit.reset
         },
-        { 
+        {
           status: 429,
           headers: {
-            'Retry-After': String(Math.ceil((userRateLimit.reset - Date.now()) / 1000)),
+            'Retry-After': String(Math.ceil((userRateLimit.reset - Date.now()) / 1000) || 60),
             'X-RateLimit-Limit': String(COMMENT_RATE_LIMITS.USER_LIMIT),
             'X-RateLimit-Remaining': String(userRateLimit.remaining),
             'X-RateLimit-Reset': String(userRateLimit.reset),
@@ -92,16 +92,16 @@ export async function POST(req: NextRequest) {
     );
 
     if (!burstLimit.success) {
-      const resetTime = Math.ceil((burstLimit.reset - Date.now()) / 1000);
+      const resetTime = Math.ceil((burstLimit.reset - Date.now()) / 1000) || 10;
       return NextResponse.json(
-        { 
+        {
           error: `Slow down! Wait ${resetTime} seconds before commenting again.`,
-          retryAfter: burstLimit.reset 
+          retryAfter: burstLimit.reset
         },
-        { 
+        {
           status: 429,
           headers: {
-            'Retry-After': String(Math.ceil((burstLimit.reset - Date.now()) / 1000)),
+            'Retry-After': String(Math.ceil((burstLimit.reset - Date.now()) / 1000) || 10),
             'X-RateLimit-Limit': String(COMMENT_RATE_LIMITS.BURST_LIMIT),
             'X-RateLimit-Remaining': String(burstLimit.remaining),
             'X-RateLimit-Reset': String(burstLimit.reset),
@@ -126,16 +126,16 @@ export async function POST(req: NextRequest) {
 
     // CRITICAL: Server-side length validation (prevents Burp Suite bypass)
     if (trimmedContent.length > COMMENT_LIMITS.MAX_LENGTH) {
-      return NextResponse.json({ 
-        error: `Comment cannot exceed ${COMMENT_LIMITS.MAX_LENGTH} characters. Current length: ${trimmedContent.length}` 
+      return NextResponse.json({
+        error: `Comment cannot exceed ${COMMENT_LIMITS.MAX_LENGTH} characters. Current length: ${trimmedContent.length}`
       }, { status: 400 });
     }
 
     // Additional security: Check if someone is trying to send extremely long content
     // Even if they bypass the trim, catch raw content that's too long
     if (content.length > COMMENT_LIMITS.MAX_LENGTH + 1000) {
-      return NextResponse.json({ 
-        error: "Invalid request - content too large" 
+      return NextResponse.json({
+        error: "Invalid request - content too large"
       }, { status: 400 });
     }
 
