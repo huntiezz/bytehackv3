@@ -27,6 +27,9 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
     const [isStreaming, setIsStreaming] = useState(false);
     const [micEnabled, setMicEnabled] = useState(false);
 
+    const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
+    const [channel, setChannel] = useState<ReturnType<typeof supabase.channel> | null>(null);
+
     const videoRef1 = useRef<HTMLVideoElement>(null);
     const videoRef2 = useRef<HTMLVideoElement>(null);
     const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -40,7 +43,17 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
 
     // Realtime subscription
     useEffect(() => {
-        const channel = supabase.channel(`match:${match.id}`)
+        const newChannel = supabase.channel(`match:${match.id}`)
+            .on('presence', { event: 'sync' }, () => {
+                const state = newChannel.presenceState();
+                const speaking = new Set<string>();
+                for (const key in state) {
+                    state[key].forEach((presence: any) => {
+                        if (presence.is_speaking && presence.user_id) speaking.add(presence.user_id);
+                    });
+                }
+                setSpeakingUsers(speaking);
+            })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'code_matches', filter: `id=eq.${match.id}` },
                 async (payload) => {
                     const newMatchData = payload.new as any;
@@ -72,7 +85,13 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                     setBets(prev => [{ ...payload.new, user }, ...prev]);
                 }
             )
-            .subscribe();
+            .subscribe(async (status) => {
+                if (status === 'SUBSCRIBED' && currentUser) {
+                    await newChannel.track({ is_speaking: micEnabled, user_id: currentUser.id });
+                }
+            });
+
+        setChannel(newChannel);
 
         // Load chat history
         const loadChat = async () => {
@@ -86,9 +105,16 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
         loadChat();
 
         return () => {
-            supabase.removeChannel(channel);
+            supabase.removeChannel(newChannel);
         };
-    }, [match.id, supabase]);
+    }, [match.id, supabase, currentUser]);
+
+    // Track mic state changes
+    useEffect(() => {
+        if (channel && currentUser) {
+            channel.track({ is_speaking: micEnabled, user_id: currentUser.id });
+        }
+    }, [micEnabled, channel, currentUser]);
 
     // Handle local stream capture (Simulation of "Force Stream")
     const startStream = async () => {
@@ -226,7 +252,7 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                     {/* Player 1 View */}
                     <div className="flex-1 border-r border-white/5 relative group bg-[#020202]">
                         <div className="absolute top-4 left-4 z-10 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/5">
-                            <div className="w-6 h-6 rounded-full bg-[#111] overflow-hidden border border-white/10">
+                            <div className={cn("w-6 h-6 rounded-full bg-[#111] overflow-hidden border border-white/10 transition-all duration-300", speakingUsers.has(match.player1_id) && "ring-2 ring-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]")}>
                                 <img src={match.player1?.avatar_url || '/pfp.png'} className="w-full h-full object-cover" />
                             </div>
                             <span className="font-bold text-sm tracking-wide text-white">{match.player1?.username}</span>
@@ -263,7 +289,7 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                         {match.player2 ? (
                             <>
                                 <div className="absolute top-4 right-4 z-10 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/5 flex-row-reverse">
-                                    <div className="w-6 h-6 rounded-full bg-[#111] overflow-hidden border border-white/10">
+                                    <div className={cn("w-6 h-6 rounded-full bg-[#111] overflow-hidden border border-white/10 transition-all duration-300", speakingUsers.has(match.player2_id) && "ring-2 ring-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]")}>
                                         <img src={match.player2.avatar_url || '/pfp.png'} className="w-full h-full object-cover" />
                                     </div>
                                     <span className="font-bold text-sm tracking-wide text-white">{match.player2.username}</span>
