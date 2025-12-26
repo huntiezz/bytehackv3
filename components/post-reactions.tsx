@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Plus, Smile } from 'lucide-react'
 import { toggleReaction } from '@/app/actions/post-reactions'
 import { cn } from '@/lib/utils'
+import { Twemoji } from '@/components/twemoji'
 import EmojiPicker, { Theme, EmojiStyle } from 'emoji-picker-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import toast from 'react-hot-toast'
@@ -93,7 +94,9 @@ export function PostReactions({ postId, initialReactions, currentUserId, current
                                 : "bg-[#0A0A0A] border-white/5 text-zinc-400 hover:bg-white/5 hover:text-white"
                         )}
                     >
-                        <span className="leading-none">{emoji}</span>
+                        <span className="leading-none flex items-center justify-center">
+                            <Twemoji text={emoji} />
+                        </span>
                         <span className={cn("text-xs", hasReacted ? "text-blue-400" : "text-zinc-500")}>{count}</span>
                     </button>
 
@@ -139,7 +142,7 @@ export function PostReactions({ postId, initialReactions, currentUserId, current
                 <PopoverContent className="w-auto p-0 border-none bg-transparent shadow-none" side="top" align="start">
                     <EmojiPicker
                         theme={Theme.DARK}
-                        emojiStyle={EmojiStyle.NATIVE}
+                        emojiStyle={EmojiStyle.TWITTER}
                         onEmojiClick={(emojiData) => {
                             handleToggle(emojiData.emoji)
                             setIsPickerOpen(false)

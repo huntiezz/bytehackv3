@@ -9,6 +9,7 @@ import { formatDistanceToNow } from "date-fns";
 import { Trash2, Reply as ReplyIcon, UserIcon, MessageSquare, Lock } from "lucide-react";
 import Link from "next/link";
 import { StyledUsername } from "@/components/styled-username";
+import { Twemoji } from "@/components/twemoji";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -236,59 +237,61 @@ export function CommentSection({ postId, postAuthorId, comments, currentUserId, 
                 </span>
               </div>
               <div className="prose prose-invert max-w-none mb-2 font-proggy text-base leading-relaxed break-words">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={{
-                    pre: ({ node, ...props }: any) => (
-                      <div className="relative">
-                        <pre {...props} className="bg-[#111] border border-white/10 p-2 rounded-lg overflow-x-auto text-xs" />
-                      </div>
-                    ),
-                    code: ({ node, className, children, ...props }: any) => {
-                      const match = /language-(\w+)/.exec(className || '')
-                      return !className?.includes('language-') ? (
-                        <code {...props} className="bg-white/10 rounded px-1 py-0.5 text-xs font-mono text-[#FFD700]">
-                          {children}
-                        </code>
-                      ) : (
-                        <code {...props} className={className}>
-                          {children}
-                        </code>
+                <Twemoji>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={{
+                      pre: ({ node, ...props }: any) => (
+                        <div className="relative">
+                          <pre {...props} className="bg-[#111] border border-white/10 p-2 rounded-lg overflow-x-auto text-xs" />
+                        </div>
+                      ),
+                      code: ({ node, className, children, ...props }: any) => {
+                        const match = /language-(\w+)/.exec(className || '')
+                        return !className?.includes('language-') ? (
+                          <code {...props} className="bg-white/10 rounded px-1 py-0.5 text-xs font-mono text-[#FFD700]">
+                            {children}
+                          </code>
+                        ) : (
+                          <code {...props} className={className}>
+                            {children}
+                          </code>
+                        )
+                      },
+                      a: ({ node, ...props }: any) => (
+                        <a {...props} className="text-primary hover:underline break-all" target="_blank" rel="noopener noreferrer" />
+                      ),
+                      img: ({ node, ...props }: any) => (
+                        <img {...props} className="rounded-lg border border-white/10 max-h-[300px] object-contain" />
+                      ),
+                      blockquote: ({ node, ...props }: any) => (
+                        <blockquote {...props} className="border-l-2 border-primary/50 pl-3 italic text-white/60 bg-white/5 py-1 pr-3 rounded-r-lg" />
+                      ),
+                      table: ({ node, ...props }: any) => (
+                        <div className="overflow-x-auto my-2 border border-white/10 rounded-lg">
+                          <table {...props} className="w-full text-left border-collapse text-xs" />
+                        </div>
+                      ),
+                      th: ({ node, ...props }: any) => (
+                        <th {...props} className="border-b border-white/10 bg-white/5 p-2 font-bold text-white" />
+                      ),
+                      h1: ({ node, ...props }: any) => (
+                        <h1 {...props} className="text-xl font-bold text-white mt-3 mb-2 border-b border-white/10 pb-1" />
+                      ),
+                      h2: ({ node, ...props }: any) => (
+                        <h2 {...props} className="text-lg font-bold text-white mt-2 mb-1" />
+                      ),
+                      h3: ({ node, ...props }: any) => (
+                        <h3 {...props} className="text-base font-bold text-white mt-2 mb-1" />
+                      ),
+                      td: ({ node, ...props }: any) => (
+                        <td {...props} className="border-b border-white/5 p-2 text-white/80" />
                       )
-                    },
-                    a: ({ node, ...props }: any) => (
-                      <a {...props} className="text-primary hover:underline break-all" target="_blank" rel="noopener noreferrer" />
-                    ),
-                    img: ({ node, ...props }: any) => (
-                      <img {...props} className="rounded-lg border border-white/10 max-h-[300px] object-contain" />
-                    ),
-                    blockquote: ({ node, ...props }: any) => (
-                      <blockquote {...props} className="border-l-2 border-primary/50 pl-3 italic text-white/60 bg-white/5 py-1 pr-3 rounded-r-lg" />
-                    ),
-                    table: ({ node, ...props }: any) => (
-                      <div className="overflow-x-auto my-2 border border-white/10 rounded-lg">
-                        <table {...props} className="w-full text-left border-collapse text-xs" />
-                      </div>
-                    ),
-                    th: ({ node, ...props }: any) => (
-                      <th {...props} className="border-b border-white/10 bg-white/5 p-2 font-bold text-white" />
-                    ),
-                    h1: ({ node, ...props }: any) => (
-                      <h1 {...props} className="text-xl font-bold text-white mt-3 mb-2 border-b border-white/10 pb-1" />
-                    ),
-                    h2: ({ node, ...props }: any) => (
-                      <h2 {...props} className="text-lg font-bold text-white mt-2 mb-1" />
-                    ),
-                    h3: ({ node, ...props }: any) => (
-                      <h3 {...props} className="text-base font-bold text-white mt-2 mb-1" />
-                    ),
-                    td: ({ node, ...props }: any) => (
-                      <td {...props} className="border-b border-white/5 p-2 text-white/80" />
-                    )
-                  }}
-                >
-                  {comment.body}
-                </ReactMarkdown>
+                    }}
+                  >
+                    {comment.body}
+                  </ReactMarkdown>
+                </Twemoji>
               </div>
               <div className="flex items-center gap-2">
                 {!isLocked && (
@@ -328,13 +331,12 @@ export function CommentSection({ postId, postAuthorId, comments, currentUserId, 
                     maxLength={COMMENT_MAX_LENGTH}
                   />
                   <div className="flex justify-between items-center text-xs">
-                    <span className={`${
-                      replyContent.length > COMMENT_MAX_LENGTH * 0.9 
-                        ? 'text-red-500 font-semibold' 
-                        : replyContent.length > COMMENT_MAX_LENGTH * 0.75 
-                          ? 'text-yellow-500' 
-                          : 'text-muted-foreground'
-                    }`}>
+                    <span className={`${replyContent.length > COMMENT_MAX_LENGTH * 0.9
+                      ? 'text-red-500 font-semibold'
+                      : replyContent.length > COMMENT_MAX_LENGTH * 0.75
+                        ? 'text-yellow-500'
+                        : 'text-muted-foreground'
+                      }`}>
                       {replyContent.length} / {COMMENT_MAX_LENGTH}
                     </span>
                   </div>
@@ -393,13 +395,12 @@ export function CommentSection({ postId, postAuthorId, comments, currentUserId, 
               maxLength={COMMENT_MAX_LENGTH}
             />
             <div className="flex justify-between items-center text-sm">
-              <span className={`${
-                content.length > COMMENT_MAX_LENGTH * 0.9 
-                  ? 'text-red-500 font-semibold' 
-                  : content.length > COMMENT_MAX_LENGTH * 0.75 
-                    ? 'text-yellow-500' 
-                    : 'text-muted-foreground'
-              }`}>
+              <span className={`${content.length > COMMENT_MAX_LENGTH * 0.9
+                ? 'text-red-500 font-semibold'
+                : content.length > COMMENT_MAX_LENGTH * 0.75
+                  ? 'text-yellow-500'
+                  : 'text-muted-foreground'
+                }`}>
                 {content.length} / {COMMENT_MAX_LENGTH} characters
               </span>
               {content.length > COMMENT_MAX_LENGTH * 0.9 && (
@@ -409,8 +410,8 @@ export function CommentSection({ postId, postAuthorId, comments, currentUserId, 
               )}
             </div>
           </div>
-          <Button 
-            type="submit" 
+          <Button
+            type="submit"
             disabled={loading || !content.trim() || content.length > COMMENT_MAX_LENGTH}
           >
             {loading ? "Posting..." : "Post Comment"}

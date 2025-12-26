@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, MapPin, MessageSquare, Code2, User, Eye, Award, MessageCircle } from "lucide-react";
+import { Calendar, MapPin, MessageSquare, Code2, User, Eye, Award, MessageCircle, Github } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 import Image from "next/image";
 import Link from "next/link";
@@ -11,6 +11,7 @@ import { Metadata } from "next";
 import { ProfileViewTracker } from "@/components/profile-view-tracker";
 import { getCurrentUser } from "@/lib/auth";
 import { BanUserButton } from "@/components/ban-user-button";
+import { FollowButton } from "@/components/follow-button";
 
 export const revalidate = 30;
 
@@ -138,6 +139,15 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
 
   const levelBadge = getLevelBadge(profile.level || 0);
 
+  const { data: followData } = await supabase
+    .from("follows")
+    .select("created_at")
+    .eq("follower_id", currentUser?.id || "")
+    .eq("following_id", profile.id)
+    .single();
+
+  const isFollowing = !!followData;
+
   return (
     <div className="min-h-screen">
       <ProfileViewTracker profileId={profile.id} />
@@ -181,9 +191,28 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
                   <p className="text-muted-foreground">@{profile.username.length > 15 ? profile.username.substring(0, 15) + "..." : profile.username}</p>
                 </div>
                 <div className="flex flex-col gap-2 items-end">
-                  <Badge variant={profile.role === 'admin' ? 'destructive' : profile.role === 'offset_updater' ? 'default' : 'secondary'}>
-                    {profile.role || 'member'}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    {currentUser && currentUser.id !== profile.id && (
+                      <FollowButton
+                        targetUserId={profile.id}
+                        initialIsFollowing={isFollowing}
+                        className="h-8"
+                      />
+                    )}
+                    <Badge variant={profile.role === 'admin' ? 'destructive' : profile.role === 'offset_updater' ? 'default' : 'secondary'}>
+                      {profile.role || 'member'}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm mt-1">
+                    <div className="flex items-center gap-1 hover:text-white cursor-help transition-colors" title="Followers">
+                      <span className="font-bold text-white">{profile.followers_count || 0}</span>
+                      <span className="text-muted-foreground">Followers</span>
+                    </div>
+                    <div className="flex items-center gap-1 hover:text-white cursor-help transition-colors" title="Following">
+                      <span className="font-bold text-white">{profile.following_count || 0}</span>
+                      <span className="text-muted-foreground">Following</span>
+                    </div>
+                  </div>
                   {profile.level >= 2 && profile.profile_decoration && (
                     <span className="text-xs text-muted-foreground">{profile.profile_decoration}</span>
                   )}
@@ -217,6 +246,12 @@ export default async function UserProfilePage({ params }: { params: Promise<{ us
                     </svg>
                     <span>{profile.discord_username}</span>
                   </div>
+                )}
+                {profile.github_username && (
+                  <a href={`https://github.com/${profile.github_username}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-white transition-colors">
+                    <Github className="w-4 h-4" />
+                    <span>{profile.github_username}</span>
+                  </a>
                 )}
               </div>
 

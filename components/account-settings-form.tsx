@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Upload, Loader2 } from "lucide-react";
+import { Upload, Loader2, Github as GithubIcon } from "lucide-react";
 import Image from "next/image";
 import { uploadFile } from "@/lib/upload-file";
+import { useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 
 const VALIDATION_RULES = {
   USERNAME: {
@@ -53,6 +55,47 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
 
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const error = searchParams.get('error');
+    const success = searchParams.get('success');
+
+    if (error) {
+      if (error === 'discord_denied') toast.error('Discord connection denied');
+      else if (error === 'github_denied') toast.error('GitHub connection denied');
+      else toast.error('Failed to connect account: ' + error);
+    }
+
+    if (success) {
+      if (success === 'discord_linked') toast.success('Discord connected!');
+      else if (success === 'github_linked') toast.success('GitHub connected!');
+
+      // Clean URL
+      router.replace('/account-settings');
+    }
+  }, [searchParams, router]);
+
+  const handleUnlink = async (provider: 'discord' | 'github') => {
+    if (!confirm(`Are you sure you want to disconnect ${provider === 'discord' ? 'Discord' : 'GitHub'}?`)) return;
+
+    try {
+      const res = await fetch('/api/auth/unlink', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider })
+      });
+
+      if (res.ok) {
+        toast.success(`${provider === 'discord' ? 'Discord' : 'GitHub'} disconnected`);
+        router.refresh();
+      } else {
+        toast.error('Failed to disconnect');
+      }
+    } catch (error) {
+      toast.error('Network error');
+    }
+  };
 
   const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
@@ -255,10 +298,10 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
           <div className="flex justify-between items-end px-1">
             <label className="text-sm font-semibold text-zinc-400">Username</label>
             <span className={`text-xs ${username.length > VALIDATION_RULES.USERNAME.MAX_LENGTH * 0.9
-                ? 'text-red-500 font-semibold'
-                : username.length > VALIDATION_RULES.USERNAME.MAX_LENGTH * 0.75
-                  ? 'text-yellow-500'
-                  : 'text-zinc-500'
+              ? 'text-red-500 font-semibold'
+              : username.length > VALIDATION_RULES.USERNAME.MAX_LENGTH * 0.75
+                ? 'text-yellow-500'
+                : 'text-zinc-500'
               }`}>
               {username.length}/{VALIDATION_RULES.USERNAME.MAX_LENGTH}
             </span>
@@ -279,10 +322,10 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
           <div className="flex justify-between items-end px-1">
             <label className="text-sm font-semibold text-zinc-400">Display Name</label>
             <span className={`text-xs ${displayName.length > VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH * 0.9
-                ? 'text-red-500 font-semibold'
-                : displayName.length > VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH * 0.75
-                  ? 'text-yellow-500'
-                  : 'text-zinc-500'
+              ? 'text-red-500 font-semibold'
+              : displayName.length > VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH * 0.75
+                ? 'text-yellow-500'
+                : 'text-zinc-500'
               }`}>
               {displayName.length}/{VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH}
             </span>
@@ -303,10 +346,10 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
           <div className="flex justify-between px-1">
             <label className="text-sm font-semibold text-zinc-400">Bio</label>
             <span className={`text-xs ${bio.length > VALIDATION_RULES.BIO.MAX_LENGTH * 0.9
-                ? 'text-red-500 font-semibold'
-                : bio.length > VALIDATION_RULES.BIO.MAX_LENGTH * 0.75
-                  ? 'text-yellow-500'
-                  : 'text-zinc-500'
+              ? 'text-red-500 font-semibold'
+              : bio.length > VALIDATION_RULES.BIO.MAX_LENGTH * 0.75
+                ? 'text-yellow-500'
+                : 'text-zinc-500'
               }`}>
               {bio.length}/{VALIDATION_RULES.BIO.MAX_LENGTH}
             </span>
@@ -318,6 +361,87 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
             placeholder="Tell us about yourself..."
             maxLength={VALIDATION_RULES.BIO.MAX_LENGTH}
           />
+        </div>
+
+        <div className="pt-8 border-t border-zinc-900/50 space-y-6">
+          <h3 className="text-lg font-semibold text-white ml-1">Connected Accounts</h3>
+
+          {/* Discord Connection */}
+          <div className="flex items-center justify-between p-4 rounded-xl bg-[#09090b] border border-zinc-800">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-[#5865F2]/20 flex items-center justify-center text-[#5865F2]">
+                <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515a.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0a12.64 12.64 0 0 0-.617-1.25a.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057a19.9 19.9 0 0 0 5.993 3.03a.078.078 0 0 0 .084-.028a14.09 14.09 0 0 0 1.226-1.994a.076.076 0 0 0-.041-.106a13.107 13.107 0 0 1-1.872-.892a.077.077 0 0 1-.008-.128a10.2 10.2 0 0 0 .372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127a12.299 12.299 0 0 1-1.873.892a.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028a19.839 19.839 0 0 0 6.002-3.03a.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.956-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419c0-1.333.955-2.419 2.157-2.419c1.21 0 2.176 1.096 2.157 2.42c0 1.333-.946 2.418-2.157 2.418z" />
+                </svg>
+              </div>
+              <div>
+                <div className="font-medium text-white">Discord</div>
+                {user.discord_username ? (
+                  <div className="text-sm text-zinc-400">Connected as <span className="text-zinc-200">{user.discord_username}</span></div>
+                ) : (
+                  <div className="text-sm text-zinc-500">Connect your Discord account</div>
+                )}
+              </div>
+            </div>
+            {user.discord_username ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                type="button"
+                onClick={() => handleUnlink('discord')}
+                className="bg-red-500/10 text-red-500 hover:bg-red-500/20"
+              >
+                Disconnect
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                size="sm"
+                type="button"
+                onClick={() => window.location.href = '/api/auth/link/discord'}
+                className="bg-[#5865F2] hover:bg-[#4752C4] text-white border-0"
+              >
+                Connect
+              </Button>
+            )}
+          </div>
+
+          {/* GitHub Connection */}
+          <div className="flex items-center justify-between p-4 rounded-xl bg-[#09090b] border border-zinc-800">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-white">
+                <GithubIcon className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="font-medium text-white">GitHub</div>
+                {user.github_username ? (
+                  <div className="text-sm text-zinc-400">Connected as <span className="text-zinc-200">{user.github_username}</span></div>
+                ) : (
+                  <div className="text-sm text-zinc-500">Link your GitHub profile</div>
+                )}
+              </div>
+            </div>
+            {user.github_username ? (
+              <Button
+                variant="destructive"
+                size="sm"
+                type="button"
+                onClick={() => handleUnlink('github')}
+                className="bg-red-500/10 text-red-500 hover:bg-red-500/20"
+              >
+                Disconnect
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                size="sm"
+                type="button"
+                onClick={() => window.location.href = '/api/auth/link/github'}
+              >
+                Connect
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="pt-8 border-t border-zinc-900/50 space-y-6">

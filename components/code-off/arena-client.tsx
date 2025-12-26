@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { MonitorPlay, Send, Trophy, Users, Shield, Mic, MicOff, DollarSign, Swords, PlayCircle, StopCircle, UserPlus } from "lucide-react";
-import Image from "next/image";
+import { MonitorPlay, Send, Trophy, Users, Shield, Mic, MicOff, DollarSign, Swords, UserPlus, ArrowLeft, LogOut } from "lucide-react";
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 interface ArenaClientProps {
     initialMatch: any;
@@ -32,6 +32,7 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
     const chatScrollRef = useRef<HTMLDivElement>(null);
 
     const supabase = createClient();
+    const router = useRouter();
     const isPlayer1 = currentUser?.id === match.player1_id;
     const isPlayer2 = currentUser?.id === match.player2_id;
     const isMod = currentUser?.id === match.moderator_id || currentUser?.role === 'admin';
@@ -51,7 +52,7 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                         if (p2) player2Data = p2;
                     }
 
-                    setMatch(prev => ({
+                    setMatch((prev: any) => ({
                         ...prev,
                         ...newMatchData,
                         ...(player2Data ? { player2: player2Data } : {}),
@@ -155,120 +156,148 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
         toast.success("You joined the match!");
     };
 
+    const handleLeave = () => {
+        router.push("/code-off");
+    };
+
     const totalPot = bets.reduce((acc, bet) => acc + bet.amount, 0);
     const p1Bets = bets.filter(b => b.prediction === 'player1').reduce((acc, b) => acc + b.amount, 0);
     const p2Bets = bets.filter(b => b.prediction === 'player2').reduce((acc, b) => acc + b.amount, 0);
 
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden">
+        <div className="flex flex-col h-screen overflow-hidden bg-black text-white selection:bg-white/20">
             {/* Top Bar */}
-            <div className="h-16 border-b border-white/10 bg-[#0A0A0A] flex items-center justify-between px-6 z-20">
+            <div className="h-16 border-b border-white/5 bg-[#050505] flex items-center justify-between px-6 z-20 shrink-0">
                 <div className="flex items-center gap-4">
-                    <h1 className="font-bold text-lg flex items-center gap-2">
-                        <Swords className="text-purple-500" />
+                    <Button variant="ghost" size="sm" onClick={handleLeave} className="text-zinc-500 hover:text-white px-0 hover:bg-transparent transition-colors">
+                        <ArrowLeft className="w-5 h-5 mr-1" />
+                        Back
+                    </Button>
+                    <div className="h-6 w-px bg-white/10" />
+                    <h1 className="font-bold text-sm md:text-base flex items-center gap-2 text-white">
+                        <Swords className="w-5 h-5 text-white" />
                         {match.topic}
                     </h1>
-                    <Badge variant={match.status === 'live' ? 'default' : 'secondary'} className={match.status === 'live' ? 'bg-red-600 animate-pulse' : ''}>
+                    <Badge variant={match.status === 'live' ? 'default' : 'secondary'} className={match.status === 'live' ? 'bg-red-600 animate-pulse border-red-500/50' : 'bg-white/5 border-white/10 text-zinc-400'}>
                         {match.status.toUpperCase()}
                     </Badge>
                 </div>
 
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4">
                     {isParticipating && (
                         <div className="flex items-center gap-2">
                             <Button
-                                variant="secondary"
+                                variant="outline"
                                 size="sm"
                                 onClick={() => setMicEnabled(!micEnabled)}
-                                className={micEnabled ? "bg-green-500/20 text-green-400" : ""}
+                                className={cn("border-white/5 h-8 text-xs font-bold", micEnabled ? "bg-green-500/20 text-green-400 border-green-500/20" : "bg-white/5 text-zinc-400 hover:text-white")}
                             >
-                                {micEnabled ? <Mic className="w-4 h-4 mr-2" /> : <MicOff className="w-4 h-4 mr-2" />}
+                                {micEnabled ? <Mic className="w-3 h-3 mr-2" /> : <MicOff className="w-3 h-3 mr-2" />}
                                 {micEnabled ? "Voice On" : "Voice Off"}
                             </Button>
                             <Button
-                                variant="default"
+                                variant="outline"
                                 size="sm"
                                 onClick={startStream}
                                 disabled={isStreaming}
-                                className={isStreaming ? "bg-red-500/20 text-red-400" : "bg-white text-black hover:bg-zinc-200"}
+                                className={cn("border-white/5 h-8 text-xs font-bold", isStreaming ? "bg-red-500/20 text-red-500 border-red-500/20" : "bg-white text-black hover:bg-zinc-200 border-transparent")}
                             >
-                                <MonitorPlay className="w-4 h-4 mr-2" />
-                                {isStreaming ? "Sharing Screen" : "Share Screen"}
+                                <MonitorPlay className="w-3 h-3 mr-2" />
+                                {isStreaming ? "Streaming" : "Share Screen"}
                             </Button>
                         </div>
                     )}
 
-                    <Badge variant="outline" className="border-yellow-500/30 text-yellow-500 px-3 py-1 font-mono">
-                        POT: ${totalPot}
-                    </Badge>
+                    <div className="flex items-center gap-2 border border-white/5 bg-white/5 rounded-full px-3 py-1">
+                        <span className="text-xs font-bold text-zinc-400">POT</span>
+                        <span className="text-sm font-bold text-yellow-500">${totalPot}</span>
+                    </div>
+
+                    <Button variant="ghost" onClick={handleLeave} size="icon" className="text-zinc-500 hover:text-white hover:bg-white/5 rounded-full">
+                        <LogOut className="w-5 h-5" />
+                    </Button>
                 </div>
             </div>
 
             <div className="flex flex-1 overflow-hidden">
                 {/* Main Arena (Left & Right Streams) */}
-                <div className="flex-1 bg-black relative flex">
+                <div className="flex-1 bg-black relative flex w-full">
                     {/* Player 1 View */}
-                    <div className="flex-1 border-r border-white/10 relative group">
-                        <div className="absolute top-4 left-4 z-10 flex items-center gap-2 bg-black/60 backdrop-blur px-3 py-1.5 rounded-full border border-white/10">
-                            <img src={match.player1?.avatar_url || '/pfp.png'} className="w-6 h-6 rounded-full" />
-                            <span className="font-bold text-sm tracking-wide">{match.player1?.username}</span>
+                    <div className="flex-1 border-r border-white/5 relative group bg-[#020202]">
+                        <div className="absolute top-4 left-4 z-10 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/5">
+                            <div className="w-6 h-6 rounded-full bg-[#111] overflow-hidden border border-white/10">
+                                <img src={match.player1?.avatar_url || '/pfp.png'} className="w-full h-full object-cover" />
+                            </div>
+                            <span className="font-bold text-sm tracking-wide text-white">{match.player1?.username}</span>
                             {match.player1_id === match.winner_id && <Trophy className="w-4 h-4 text-yellow-500" />}
                         </div>
 
-                        <div className="absolute bottom-4 left-4 z-10 bg-black/60 backdrop-blur px-3 py-1.5 rounded-full border border-white/10 font-mono text-xs text-zinc-400">
-                            STATUS: {isStreaming && isPlayer1 ? "LIVE" : "OFFLINE"}
+                        <div className={`absolute bottom-4 left-4 z-10 px-2 py-0.5 rounded-[4px] font-bold text-[10px] tracking-wider uppercase border ${isStreaming && isPlayer1 ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-black/40 text-zinc-500 border-white/5"}`}>
+                            {isStreaming && isPlayer1 ? "LIVE FEED" : "OFFLINE"}
                         </div>
 
-                        <video ref={videoRef1} autoPlay muted className="w-full h-full object-contain bg-[#050505]" />
+                        <div className="w-full h-full flex items-center justify-center relative">
+                            <video ref={videoRef1} autoPlay muted className="max-w-full max-h-full object-contain" />
 
-                        {!isStreaming && (
-                            <div className="absolute inset-0 flex items-center justify-center flex-col gap-2 pointer-events-none">
-                                <MonitorPlay className="w-12 h-12 text-zinc-800" />
-                                <span className="text-zinc-700 font-mono text-xs">WAITING FOR SIGNAL...</span>
-                            </div>
-                        )}
+                            {!isStreaming && (
+                                <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 pointer-events-none opacity-20">
+                                    <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center border border-white/5">
+                                        <MonitorPlay className="w-8 h-8 text-white" />
+                                    </div>
+                                    <span className="text-xs font-bold tracking-widest uppercase">P1 Signal Lost</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Vs Divider */}
-                    <div className="w-px bg-white/10 relative flex items-center justify-center z-20">
-                        <div className="absolute bg-[#050505] p-2 rounded-full border border-purple-500/50 shadow-[0_0_20px_rgba(168,85,247,0.5)]">
-                            <span className="font-black text-purple-500">VS</span>
+                    <div className="w-px bg-white/5 relative flex items-center justify-center z-20">
+                        <div className="absolute bg-[#0A0A0A] px-2 py-1 rounded-sm border border-white/10 shadow-xl">
+                            <span className="font-black text-xs text-white/20">VS</span>
                         </div>
                     </div>
 
                     {/* Player 2 View */}
-                    <div className="flex-1 relative">
+                    <div className="flex-1 relative bg-[#020202]">
                         {match.player2 ? (
                             <>
-                                <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-black/60 backdrop-blur px-3 py-1.5 rounded-full border border-white/10">
-                                    <span className="font-bold text-sm tracking-wide">{match.player2.username}</span>
-                                    <img src={match.player2.avatar_url || '/pfp.png'} className="w-6 h-6 rounded-full" />
+                                <div className="absolute top-4 right-4 z-10 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/5 flex-row-reverse">
+                                    <div className="w-6 h-6 rounded-full bg-[#111] overflow-hidden border border-white/10">
+                                        <img src={match.player2.avatar_url || '/pfp.png'} className="w-full h-full object-cover" />
+                                    </div>
+                                    <span className="font-bold text-sm tracking-wide text-white">{match.player2.username}</span>
                                     {match.player2_id === match.winner_id && <Trophy className="w-4 h-4 text-yellow-500" />}
                                 </div>
 
-                                <div className="absolute bottom-4 right-4 z-10 bg-black/60 backdrop-blur px-3 py-1.5 rounded-full border border-white/10 font-mono text-xs text-zinc-400">
-                                    STATUS: {isStreaming && isPlayer2 ? "LIVE" : "OFFLINE"}
+                                <div className={`absolute bottom-4 right-4 z-10 px-2 py-0.5 rounded-[4px] font-bold text-[10px] tracking-wider uppercase border ${isStreaming && isPlayer2 ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-black/40 text-zinc-500 border-white/5"}`}>
+                                    {isStreaming && isPlayer2 ? "LIVE FEED" : "OFFLINE"}
                                 </div>
 
-                                <video ref={videoRef2} autoPlay muted className="w-full h-full object-contain bg-[#050505]" />
-
-                                {!isStreaming && (
-                                    <div className="absolute inset-0 flex items-center justify-center flex-col gap-2 pointer-events-none">
-                                        <MonitorPlay className="w-12 h-12 text-zinc-800" />
-                                        <span className="text-zinc-700 font-mono text-xs">WAITING FOR SIGNAL...</span>
-                                    </div>
-                                )}
+                                <div className="w-full h-full flex items-center justify-center relative">
+                                    <video ref={videoRef2} autoPlay muted className="max-w-full max-h-full object-contain" />
+                                    {!isStreaming && (
+                                        <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 pointer-events-none opacity-20">
+                                            <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center border border-white/5">
+                                                <MonitorPlay className="w-8 h-8 text-white" />
+                                            </div>
+                                            <span className="text-xs font-bold tracking-widest uppercase">P2 Signal Lost</span>
+                                        </div>
+                                    )}
+                                </div>
                             </>
                         ) : (
-                            <div className="absolute inset-0 flex items-center justify-center flex-col gap-4">
-                                <div className="w-20 h-20 rounded-full border-2 border-dashed border-zinc-700 flex items-center justify-center">
-                                    <UserPlus className="w-8 h-8 text-zinc-700" />
+                            <div className="absolute inset-0 flex items-center justify-center flex-col gap-6">
+                                <div className="w-24 h-24 rounded-full border border-dashed border-white/10 flex items-center justify-center bg-white/5">
+                                    <UserPlus className="w-8 h-8 text-zinc-500" />
                                 </div>
-                                <h3 className="text-zinc-500 font-semibold">Waiting for challenger</h3>
+                                <div className="text-center">
+                                    <h3 className="text-white font-bold text-lg mb-1">Waiting for challenger</h3>
+                                    <p className="text-zinc-500 text-sm">Anyone can join this open challenge.</p>
+                                </div>
                                 {currentUser && currentUser.id !== match.player1_id && (
-                                    <Button onClick={joinMatch} variant="outline" className="border-cyan-500/50 text-cyan-500 hover:bg-cyan-500/10">
-                                        JOIN BATTLE
+                                    <Button onClick={joinMatch} className="bg-white text-black hover:bg-zinc-200 font-bold px-8 rounded-full">
+                                        Join Battle
                                     </Button>
                                 )}
                             </div>
@@ -277,99 +306,112 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                 </div>
 
                 {/* Sidebar (Chat & Bets) */}
-                <div className="w-96 bg-[#0A0A0A] border-l border-white/10 flex flex-col">
+                <div className="w-[380px] bg-[#050505] border-l border-white/5 flex flex-col shrink-0 z-10 shadow-2xl">
                     {/* Tabs */}
-                    <div className="flex border-b border-white/10">
-                        <div className="flex-1 p-3 text-center text-sm font-bold border-b-2 border-purple-500 bg-white/5 cursor-pointer">CHAT</div>
-                        <div className="flex-1 p-3 text-center text-sm font-bold text-zinc-500 hover:text-white cursor-pointer hover:bg-white/5 transition-colors">BETS</div>
+                    <div className="flex border-b border-white/5 p-1 mx-2 mt-2">
+                        <div className="flex-1 py-2 text-center text-xs font-bold text-white border-b-2 border-white cursor-pointer">LIVE CHAT</div>
                     </div>
 
                     {/* Chat Area */}
-                    <div className="flex-1 flex flex-col min-h-0">
-                        <ScrollArea className="flex-1 p-4">
-                            <div className="space-y-4">
+                    <div className="flex-1 flex flex-col min-h-0 relative">
+                        {/* Fade effect at top */}
+                        <div className="absolute top-0 left-0 w-full h-4 bg-gradient-to-b from-[#050505] to-transparent z-10 pointer-events-none" />
+
+                        <ScrollArea className="flex-1 px-4 py-2">
+                            <div className="space-y-3 py-2">
                                 {messages.map((msg) => (
-                                    <div key={msg.id} className="flex gap-2 items-start text-sm animate-in slide-in-from-bottom-2">
-                                        <span className={cn(
-                                            "font-bold whitespace-nowrap",
-                                            msg.user.username === match.player1?.username ? "text-cyan-400" :
-                                                msg.user.username === match.player2?.username ? "text-purple-400" :
-                                                    msg.user.role === 'admin' ? "text-red-500" : "text-zinc-400"
-                                        )}>
-                                            {msg.user.username}:
-                                        </span>
-                                        <span className="text-zinc-300 break-words">{msg.message}</span>
+                                    <div key={msg.id} className="text-sm animate-in slide-in-from-bottom-1 duration-200 group">
+                                        <div className="flex items-baseline gap-2">
+                                            <span className={cn(
+                                                "font-bold text-xs truncate max-w-[100px] cursor-pointer hover:underline",
+                                                msg.user.username === match.player1?.username ? "text-cyan-400" :
+                                                    msg.user.username === match.player2?.username ? "text-purple-400" :
+                                                        msg.user.role === 'admin' ? "text-red-500" : "text-zinc-400"
+                                            )}>
+                                                {msg.user.username}
+                                            </span>
+                                            <span className="text-zinc-300 group-hover:text-white transition-colors leading-relaxed break-words">{msg.message}</span>
+                                        </div>
                                     </div>
                                 ))}
                                 <div ref={chatScrollRef} />
                             </div>
                         </ScrollArea>
 
-                        <form onSubmit={sendMessage} className="p-4 border-t border-white/10 flex gap-2">
-                            <Input
-                                value={newMessage}
-                                onChange={(e) => setNewMessage(e.target.value)}
-                                placeholder="Say something..."
-                                className="bg-black/50 border-white/10 focus-visible:ring-purple-500"
-                            />
-                            <Button size="icon" className="bg-purple-600 hover:bg-purple-700">
-                                <Send className="w-4 h-4" />
-                            </Button>
+                        <form onSubmit={sendMessage} className="p-3 border-t border-white/5 bg-[#050505]">
+                            <div className="relative">
+                                <Input
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    placeholder="Type a message..."
+                                    className="bg-white/5 border-white/5 focus-visible:ring-0 focus-visible:border-white/20 pr-10 h-10 rounded-xl"
+                                />
+                                <Button type="submit" size="icon" variant="ghost" className="absolute right-1 top-1 h-8 w-8 text-zinc-400 hover:text-white hover:bg-transparent">
+                                    <Send className="w-4 h-4" />
+                                </Button>
+                            </div>
                         </form>
                     </div>
 
                     {/* Moderator Tools Panel */}
                     {isMod && (
-                        <div className="p-4 border-t border-white/10 bg-white/5">
-                            <div className="flex items-center gap-2 mb-3 text-xs font-bold text-red-400 uppercase tracking-wider">
-                                <Shield className="w-3 h-3" /> Mod Controls
+                        <div className="p-4 border-t border-white/5 bg-white/5 backdrop-blur-sm">
+                            <div className="flex items-center gap-2 mb-3 text-[10px] font-black text-white/40 uppercase tracking-widest">
+                                <Shield className="w-3 h-3" /> Moderator Controls
                             </div>
                             <div className="grid grid-cols-2 gap-2">
-                                {match.status === 'pending' && <Button size="sm" onClick={() => updateStatus('live')} className="w-full bg-green-600 hover:bg-green-700">GO LIVE</Button>}
-                                {match.status === 'live' && <Button size="sm" onClick={() => updateStatus('voting')} className="w-full bg-yellow-600 hover:bg-yellow-700">STOP & VOTE</Button>}
+                                {match.status === 'pending' && <Button size="sm" onClick={() => updateStatus('live')} className="w-full bg-green-600 hover:bg-green-700 text-xs font-bold">START MATCH</Button>}
+                                {match.status === 'live' && <Button size="sm" onClick={() => updateStatus('voting')} className="w-full bg-yellow-600 hover:bg-yellow-700 text-xs font-bold">STOP & VOTE</Button>}
                                 {(match.status === 'live' || match.status === 'voting') && (
                                     <>
-                                        <Button size="sm" variant="outline" onClick={() => declareWinner(match.player1_id)} className="w-full border-cyan-500/50 text-cyan-400">WIN P1</Button>
-                                        <Button size="sm" variant="outline" onClick={() => declareWinner(match.player2_id)} className="w-full border-purple-500/50 text-purple-400">WIN P2</Button>
+                                        <Button size="sm" variant="outline" onClick={() => declareWinner(match.player1_id)} className="w-full border-cyan-500/20 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 text-xs font-bold">P1 WINS</Button>
+                                        <Button size="sm" variant="outline" onClick={() => declareWinner(match.player2_id)} className="w-full border-purple-500/20 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 text-xs font-bold">P2 WINS</Button>
                                     </>
                                 )}
                             </div>
                         </div>
                     )}
 
-                    {/* Betting Panel (Simplified view for MVP) */}
-                    <div className="p-4 border-t border-white/10 bg-black/20">
-                        <div className="flex justify-between items-center mb-2">
-                            <h3 className="text-xs font-bold text-zinc-500 uppercase">Place Bet</h3>
-                            <div className="text-xs text-green-400 font-mono">My Wallet: $999</div>
+                    {/* Betting Panel */}
+                    <div className="p-4 border-t border-white/5 bg-[#080808]">
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-[10px] font-black text-white/40 uppercase tracking-widest">Place Bet</h3>
+                            <div className="flex items-center gap-1 text-[10px] text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded font-mono font-bold">
+                                +$999
+                            </div>
                         </div>
-                        <div className="flex gap-2 mb-2">
+                        <div className="grid grid-cols-2 gap-2 mb-3">
                             <Button
                                 size="sm"
                                 variant={betSide === 'player1' ? 'default' : 'outline'}
-                                className={cn("flex-1", betSide === 'player1' ? "bg-cyan-600" : "border-white/10")}
+                                className={cn("flex flex-col h-auto py-2 border-white/5", betSide === 'player1' ? "bg-cyan-500/20 border-cyan-500/50 text-cyan-400 hover:bg-cyan-500/20" : "bg-white/5 hover:bg-white/10 text-zinc-400")}
                                 onClick={() => setBetSide('player1')}
                             >
-                                P1 ({p1Bets})
+                                <span className="text-[10px] uppercase font-bold text-white/50 mb-0.5">Player 1</span>
+                                <span className="font-bold text-sm">x1.5</span>
                             </Button>
                             <Button
                                 size="sm"
                                 variant={betSide === 'player2' ? 'default' : 'outline'}
-                                className={cn("flex-1", betSide === 'player2' ? "bg-purple-600" : "border-white/10")}
+                                className={cn("flex flex-col h-auto py-2 border-white/5", betSide === 'player2' ? "bg-purple-500/20 border-purple-500/50 text-purple-400 hover:bg-purple-500/20" : "bg-white/5 hover:bg-white/10 text-zinc-400")}
                                 onClick={() => setBetSide('player2')}
                             >
-                                P2 ({p2Bets})
+                                <span className="text-[10px] uppercase font-bold text-white/50 mb-0.5">Player 2</span>
+                                <span className="font-bold text-sm">x1.9</span>
                             </Button>
                         </div>
                         <div className="flex gap-2">
-                            <Input
-                                placeholder="Amount"
-                                className="bg-black/50 border-white/10 h-9"
-                                type="number"
-                                value={betAmount}
-                                onChange={(e) => setBetAmount(e.target.value)}
-                            />
-                            <Button size="sm" onClick={placeBet} disabled={!betSide || !betAmount} className="bg-green-600 hover:bg-green-700">
+                            <div className="relative flex-1">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-xs">$</span>
+                                <Input
+                                    placeholder="0"
+                                    className="bg-white/5 border-white/5 h-9 pl-6 text-sm"
+                                    type="number"
+                                    value={betAmount}
+                                    onChange={(e) => setBetAmount(e.target.value)}
+                                />
+                            </div>
+                            <Button size="sm" onClick={placeBet} disabled={!betSide || !betAmount} className="bg-white text-black hover:bg-zinc-200 font-bold px-4">
                                 BET
                             </Button>
                         </div>

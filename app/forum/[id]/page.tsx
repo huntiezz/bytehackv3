@@ -14,6 +14,8 @@ import { PostActions } from "@/components/post-actions";
 import { StyledUsername } from "@/components/styled-username";
 import { NewPostButton } from "@/components/new-post-button";
 import { PostReactions } from "@/components/post-reactions";
+import { Twemoji } from "@/components/twemoji";
+import { ZoomImage } from "@/components/zoom-image";
 import { checkCategoryPermission } from "@/lib/forum-permissions";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -501,62 +503,64 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
                 </div>
 
                 <div className="prose prose-invert max-w-none mb-4 post-content font-proggy text-base leading-relaxed break-words">
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      pre: ({ node, ...props }: any) => (
-                        <div className="relative">
-                          <pre {...props} className="bg-[#111] border border-white/10 p-4 rounded-lg overflow-x-auto" />
-                        </div>
-                      ),
-                      code: ({ node, className, children, ...props }: any) => {
-                        const match = /language-(\w+)/.exec(className || '')
-                        return !className?.includes('language-') ? (
-                          <code {...props} className="bg-white/10 rounded px-1.5 py-0.5 text-sm font-mono text-[#FFD700]">
-                            {children}
-                          </code>
-                        ) : (
-                          <code {...props} className={className}>
-                            {children}
-                          </code>
+                  <Twemoji>
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        pre: ({ node, ...props }: any) => (
+                          <div className="relative">
+                            <pre {...props} className="bg-[#111] border border-white/10 p-4 rounded-lg overflow-x-auto" />
+                          </div>
+                        ),
+                        code: ({ node, className, children, ...props }: any) => {
+                          const match = /language-(\w+)/.exec(className || '')
+                          return !className?.includes('language-') ? (
+                            <code {...props} className="bg-white/10 rounded px-1.5 py-0.5 text-sm font-mono text-[#FFD700]">
+                              {children}
+                            </code>
+                          ) : (
+                            <code {...props} className={className}>
+                              {children}
+                            </code>
+                          )
+                        },
+                        a: ({ node, ...props }: any) => (
+                          <a {...props} className="text-primary hover:underline break-all" target="_blank" rel="noopener noreferrer" />
+                        ),
+                        img: ({ node, ...props }: any) => (
+                          <ZoomImage {...props} className="rounded-lg border border-white/10 max-h-[500px] object-contain" />
+                        ),
+                        blockquote: ({ node, ...props }: any) => (
+                          <blockquote {...props} className="border-l-4 border-primary/50 pl-4 italic text-white/60 bg-white/5 py-2 pr-4 rounded-r-lg" />
+                        ),
+                        table: ({ node, ...props }: any) => (
+                          <div className="overflow-x-auto my-4 border border-white/10 rounded-lg">
+                            <table {...props} className="w-full text-left border-collapse" />
+                          </div>
+                        ),
+                        th: ({ node, ...props }: any) => (
+                          <th {...props} className="border-b border-white/10 bg-white/5 p-3 text-sm font-bold text-white" />
+                        ),
+                        h1: ({ node, ...props }: any) => (
+                          <h1 {...props} className="text-3xl font-bold text-white mt-6 mb-4 border-b border-white/10 pb-2" />
+                        ),
+                        h2: ({ node, ...props }: any) => (
+                          <h2 {...props} className="text-2xl font-bold text-white mt-5 mb-3" />
+                        ),
+                        h3: ({ node, ...props }: any) => (
+                          <h3 {...props} className="text-xl font-bold text-white mt-4 mb-2" />
+                        ),
+                        h4: ({ node, ...props }: any) => (
+                          <h4 {...props} className="text-lg font-bold text-white mt-4 mb-2" />
+                        ),
+                        td: ({ node, ...props }: any) => (
+                          <td {...props} className="border-b border-white/5 p-3 text-sm text-white/80" />
                         )
-                      },
-                      a: ({ node, ...props }: any) => (
-                        <a {...props} className="text-primary hover:underline break-all" target="_blank" rel="noopener noreferrer" />
-                      ),
-                      img: ({ node, ...props }: any) => (
-                        <img {...props} className="rounded-lg border border-white/10 max-h-[500px] object-contain" />
-                      ),
-                      blockquote: ({ node, ...props }: any) => (
-                        <blockquote {...props} className="border-l-4 border-primary/50 pl-4 italic text-white/60 bg-white/5 py-2 pr-4 rounded-r-lg" />
-                      ),
-                      table: ({ node, ...props }: any) => (
-                        <div className="overflow-x-auto my-4 border border-white/10 rounded-lg">
-                          <table {...props} className="w-full text-left border-collapse" />
-                        </div>
-                      ),
-                      th: ({ node, ...props }: any) => (
-                        <th {...props} className="border-b border-white/10 bg-white/5 p-3 text-sm font-bold text-white" />
-                      ),
-                      h1: ({ node, ...props }: any) => (
-                        <h1 {...props} className="text-3xl font-bold text-white mt-6 mb-4 border-b border-white/10 pb-2" />
-                      ),
-                      h2: ({ node, ...props }: any) => (
-                        <h2 {...props} className="text-2xl font-bold text-white mt-5 mb-3" />
-                      ),
-                      h3: ({ node, ...props }: any) => (
-                        <h3 {...props} className="text-xl font-bold text-white mt-4 mb-2" />
-                      ),
-                      h4: ({ node, ...props }: any) => (
-                        <h4 {...props} className="text-lg font-bold text-white mt-4 mb-2" />
-                      ),
-                      td: ({ node, ...props }: any) => (
-                        <td {...props} className="border-b border-white/5 p-3 text-sm text-white/80" />
-                      )
-                    }}
-                  >
-                    {post.body}
-                  </ReactMarkdown>
+                      }}
+                    >
+                      {post.body}
+                    </ReactMarkdown>
+                  </Twemoji>
                 </div>
 
                 {fileUploads && fileUploads.length > 0 && (

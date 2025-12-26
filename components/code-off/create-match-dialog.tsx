@@ -51,7 +51,7 @@ export function CreateMatchDialog({ userId }: { userId: string }) {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button size="lg" className="bg-gradient-to-r from-cyan-600 to-purple-600 hover:from-cyan-500 hover:to-purple-500 text-white font-bold tracking-wide border-0 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+                <Button size="lg" className="bg-white hover:bg-zinc-200 text-black font-bold tracking-wide border-0">
                     <Plus className="w-5 h-5 mr-2" />
                     CREATE CHALLENGE
                 </Button>
