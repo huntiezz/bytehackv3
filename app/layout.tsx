@@ -10,6 +10,7 @@ import "./username-effects.css";
 import { ConditionalLayoutWrapper } from "@/components/conditional-layout-wrapper";
 import { ToastProvider } from "@/components/toast-provider";
 import { PresenceUpdater } from "@/components/presence-updater";
+import { PasswordRecoveryListener } from "@/components/auth/password-recovery-listener";
 import { Analytics } from "@vercel/analytics/next";
 import { Snowfall } from "@/components/snowfall";
 
@@ -80,6 +81,7 @@ export default function RootLayout({
         <ToastProvider />
         <ConditionalLayoutWrapper />
         <PresenceUpdater />
+        <PasswordRecoveryListener />
         <TosMonitor />
         <main>
           {children}
