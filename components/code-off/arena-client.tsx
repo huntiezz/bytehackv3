@@ -43,6 +43,8 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
 
     // Realtime subscription
     useEffect(() => {
+        if (!match?.id) return;
+
         const newChannel = supabase.channel(`match:${match.id}`)
             .on('presence', { event: 'sync' }, () => {
                 const state = newChannel.presenceState();
@@ -56,7 +58,13 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
             })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'code_matches', filter: `id=eq.${match.id}` },
                 async (payload) => {
+                    if (payload.errors) {
+                        console.error("Realtime error:", payload.errors);
+                        return;
+                    }
                     const newMatchData = payload.new as any;
+                    if (!newMatchData) return;
+
                     let player2Data = undefined;
 
                     // Always try to fetch player 2 if ID exists, to ensure we have latest data/existence
@@ -89,18 +97,28 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                 if (status === 'SUBSCRIBED' && currentUser) {
                     await newChannel.track({ is_speaking: micEnabled, user_id: currentUser.id });
                 }
+                if (status === 'CHANNEL_ERROR') {
+                    console.error("Realtime channel error");
+                    // toast.error("Connection error"); // Suppress specifically to avoid spamming users if it's transient
+                }
             });
 
         setChannel(newChannel);
 
         // Load chat history
         const loadChat = async () => {
-            const { data } = await supabase.from('code_chat')
+            if (!match?.id) return;
+            const { data, error } = await supabase.from('code_chat')
                 .select('*, user:profiles(username, avatar_url, role)')
                 .eq('match_id', match.id)
                 .order('created_at', { ascending: true })
                 .limit(50);
-            if (data) setMessages(data);
+
+            if (error) {
+                console.error("Chat load error:", error);
+            } else if (data) {
+                setMessages(data);
+            }
         };
         loadChat();
 
