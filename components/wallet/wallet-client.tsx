@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Coins, Gift, Ticket, Loader2, Copy, Check } from "lucide-react";
+import { Coins, Gift, Ticket, Loader2, Copy, Check, Link as LinkIcon } from "lucide-react";
 import { claimDailyReward, buyInviteCode } from "@/app/wallet/actions";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -115,18 +115,32 @@ export function WalletClient({ user, isClaimable, nextClaimTime }: WalletClientP
 }
 
 export function CopyCode({ code }: { code: string }) {
-    const [copied, setCopied] = useState(false);
+    const [copiedCode, setCopiedCode] = useState(false);
+    const [copiedLink, setCopiedLink] = useState(false);
 
-    const onCopy = () => {
+    const onCopyCode = () => {
         navigator.clipboard.writeText(code);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        setCopiedCode(true);
+        setTimeout(() => setCopiedCode(false), 2000);
         toast.success("Code copied!");
     };
 
+    const onCopyLink = () => {
+        const url = `${window.location.origin}/register?inviteCode=${code}`;
+        navigator.clipboard.writeText(url);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+        toast.success("Link copied!");
+    };
+
     return (
-        <Button variant="ghost" size="icon" onClick={onCopy} className="h-8 w-8 hover:bg-white/10">
-            {copied ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-zinc-400" />}
-        </Button>
+        <div className="flex gap-1">
+            <Button variant="ghost" size="icon" onClick={onCopyCode} className="h-8 w-8 hover:bg-white/10" title="Copy Code">
+                {copiedCode ? <Check className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4 text-zinc-400" />}
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onCopyLink} className="h-8 w-8 hover:bg-white/10" title="Copy Link">
+                {copiedLink ? <Check className="w-4 h-4 text-green-500" /> : <LinkIcon className="w-4 h-4 text-zinc-400" />}
+            </Button>
+        </div>
     )
 }

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
@@ -24,6 +24,16 @@ export function LoginForm({
     const [captchaCode, setCaptchaCode] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
+
+    useEffect(() => {
+        // Backup check: If we landed on login page with specific recovery hash, redirect manually if listener missed it
+        if (typeof window !== 'undefined') {
+            const hash = window.location.hash;
+            if (hash && hash.includes("type=recovery") && hash.includes("access_token")) {
+                router.push("/update-password");
+            }
+        }
+    }, [router]);
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();

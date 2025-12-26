@@ -10,6 +10,7 @@ import { MonitorPlay, Send, Trophy, Users, Shield, Mic, MicOff, DollarSign, Swor
 import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { placeBet, resolveMatch } from "@/app/code-off/actions";
 
 interface ArenaClientProps {
     initialMatch: any;
@@ -25,6 +26,7 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
     const [betAmount, setBetAmount] = useState("");
     const [betSide, setBetSide] = useState<"player1" | "player2" | null>(null);
     const [isStreaming, setIsStreaming] = useState(false);
+    const [isPlacingBet, setIsPlacingBet] = useState(false);
     const [micEnabled, setMicEnabled] = useState(false);
 
     const [speakingUsers, setSpeakingUsers] = useState<Set<string>>(new Set());
@@ -235,25 +237,31 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
         setNewMessage("");
     };
 
-    const placeBet = async () => {
+
+
+    const handlePlaceBet = async () => {
         if (!currentUser) return toast.error("Login to bet");
         if (!betAmount || !betSide) return toast.error("Select side and amount");
 
         const amount = parseInt(betAmount);
         if (isNaN(amount) || amount <= 0) return toast.error("Invalid amount");
+        if (amount > (currentUser.coins || 0)) return toast.error("Insufficient funds");
 
-        const { error } = await supabase.from('code_bets').insert({
-            match_id: match.id,
-            user_id: currentUser.id,
-            amount,
-            prediction: betSide
-        });
-
-        if (error) toast.error(error.message);
-        else {
-            toast.success("Bet placed!");
-            setBetAmount("");
-            setBetSide(null);
+        setIsPlacingBet(true);
+        try {
+            const result = await placeBet(match.id, betSide, amount);
+            if (result.error) {
+                toast.error(result.error);
+            } else {
+                toast.success("Bet placed!");
+                setBetAmount("");
+                setBetSide(null);
+                router.refresh(); // Refresh to update balance
+            }
+        } catch (e) {
+            toast.error("Failed to place bet");
+        } finally {
+            setIsPlacingBet(false);
         }
     };
 
@@ -261,11 +269,14 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
         await supabase.from('code_matches').update({ status }).eq('id', match.id);
     };
 
-    const declareWinner = async (winnerId: string | null) => {
-        await supabase.from('code_matches').update({
-            status: 'finished',
-            winner_id: winnerId
-        }).eq('id', match.id);
+    const handleDeclareWinner = async (winnerId: string | null) => {
+        if (!confirm("Are you sure? This will end the match and payout bets.")) return;
+        const result = await resolveMatch(match.id, winnerId);
+        if (result.error) toast.error(result.error);
+        else {
+            toast.success("Match resolved!");
+            router.refresh();
+        }
     };
 
     const joinMatch = async () => {
@@ -282,11 +293,13 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
     const p1Bets = bets.filter(b => b.prediction === 'player1').reduce((acc, b) => acc + b.amount, 0);
     const p2Bets = bets.filter(b => b.prediction === 'player2').reduce((acc, b) => acc + b.amount, 0);
 
+    // ... (other handlers)
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-black text-white selection:bg-white/20">
-            {/* Top Bar */}
+            {/* Top Bar (Keep same) */}
             <div className="h-16 border-b border-white/5 bg-[#050505] flex items-center justify-between px-6 z-20 shrink-0">
+                {/* ... (keep top bar content) */}
                 <div className="flex items-center gap-4">
                     <Button variant="ghost" size="sm" onClick={handleLeave} className="text-zinc-500 hover:text-white px-0 hover:bg-transparent transition-colors">
                         <ArrowLeft className="w-5 h-5 mr-1" />
@@ -303,6 +316,7 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                 </div>
 
                 <div className="flex items-center gap-4">
+                    {/* ... (keep existing buttons) */}
                     {isParticipating && (
                         <div className="flex items-center gap-2">
                             <Button
@@ -339,10 +353,10 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
             </div>
 
             <div className="flex flex-1 overflow-hidden">
-                {/* Main Arena (Left & Right Streams) */}
-                <div className="flex-1 bg-black relative flex w-full">
-                    {/* Player 1 View */}
-                    <div className="flex-1 border-r border-white/5 relative group bg-[#020202]">
+                {/* Main Arena - CHANGED TO VERTICAL LAYOUT */}
+                <div className="flex-1 bg-black relative flex flex-col w-full h-full">
+                    {/* Player 1 View (Top) */}
+                    <div className="flex-1 border-b border-white/5 relative group bg-[#020202]">
                         <div className="absolute top-4 left-4 z-10 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/5">
                             <div className={cn("w-6 h-6 rounded-full bg-[#111] overflow-hidden border border-white/10 transition-all duration-300", speakingUsers.has(match.player1_id) && "ring-2 ring-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]")}>
                                 <img src={match.player1?.avatar_url || '/pfp.png'} className="w-full h-full object-cover" />
@@ -357,7 +371,6 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
 
                         <div className="w-full h-full flex items-center justify-center relative">
                             <video ref={videoRef1} autoPlay muted className="max-w-full max-h-full object-contain" />
-
                             {!isStreaming && (
                                 <div className="absolute inset-0 flex items-center justify-center flex-col gap-3 pointer-events-none opacity-20">
                                     <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center border border-white/5">
@@ -369,18 +382,18 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                         </div>
                     </div>
 
-                    {/* Vs Divider */}
-                    <div className="w-px bg-white/5 relative flex items-center justify-center z-20">
-                        <div className="absolute bg-[#0A0A0A] px-2 py-1 rounded-sm border border-white/10 shadow-xl">
-                            <span className="font-black text-xs text-white/20">VS</span>
+                    {/* Vs Divider (Horizontal now) */}
+                    <div className="h-px bg-white/5 relative flex items-center justify-center z-20">
+                        <div className="absolute bg-[#0A0A0A] px-3 py-0.5 rounded-sm border border-white/10 shadow-xl">
+                            <span className="font-black text-[10px] text-white/30 tracking-widest">VS</span>
                         </div>
                     </div>
 
-                    {/* Player 2 View */}
+                    {/* Player 2 View (Bottom) */}
                     <div className="flex-1 relative bg-[#020202]">
                         {match.player2 ? (
                             <>
-                                <div className="absolute top-4 right-4 z-10 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/5 flex-row-reverse">
+                                <div className="absolute top-4 left-4 z-10 flex items-center gap-3 bg-black/60 backdrop-blur-md px-4 py-2 rounded-full border border-white/5">
                                     <div className={cn("w-6 h-6 rounded-full bg-[#111] overflow-hidden border border-white/10 transition-all duration-300", speakingUsers.has(match.player2_id) && "ring-2 ring-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)]")}>
                                         <img src={match.player2.avatar_url || '/pfp.png'} className="w-full h-full object-cover" />
                                     </div>
@@ -388,7 +401,7 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                                     {match.player2_id === match.winner_id && <Trophy className="w-4 h-4 text-yellow-500" />}
                                 </div>
 
-                                <div className={`absolute bottom-4 right-4 z-10 px-2 py-0.5 rounded-[4px] font-bold text-[10px] tracking-wider uppercase border ${isStreaming && isPlayer2 ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-black/40 text-zinc-500 border-white/5"}`}>
+                                <div className={`absolute bottom-4 left-4 z-10 px-2 py-0.5 rounded-[4px] font-bold text-[10px] tracking-wider uppercase border ${isStreaming && isPlayer2 ? "bg-red-500/10 text-red-500 border-red-500/20" : "bg-black/40 text-zinc-500 border-white/5"}`}>
                                     {isStreaming && isPlayer2 ? "LIVE FEED" : "OFFLINE"}
                                 </div>
 
@@ -424,17 +437,15 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                 </div>
 
                 {/* Sidebar (Chat & Bets) */}
-                <div className="w-[380px] bg-[#050505] border-l border-white/5 flex flex-col shrink-0 z-10 shadow-2xl">
-                    {/* Tabs */}
+                <div className="w-[340px] bg-[#050505] border-l border-white/5 flex flex-col shrink-0 z-10 shadow-2xl">
+                    {/* ... (Keep tabs and chat area structure mostly same) */}
                     <div className="flex border-b border-white/5 p-1 mx-2 mt-2">
                         <div className="flex-1 py-2 text-center text-xs font-bold text-white border-b-2 border-white cursor-pointer">LIVE CHAT</div>
                     </div>
 
-                    {/* Chat Area */}
                     <div className="flex-1 flex flex-col min-h-0 relative">
-                        {/* Fade effect at top */}
+                        {/* ... (same chat log) */}
                         <div className="absolute top-0 left-0 w-full h-4 bg-gradient-to-b from-[#050505] to-transparent z-10 pointer-events-none" />
-
                         <ScrollArea className="flex-1 px-4 py-2">
                             <div className="space-y-3 py-2">
                                 {messages.map((msg) => (
@@ -471,7 +482,7 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                         </form>
                     </div>
 
-                    {/* Moderator Tools Panel */}
+                    {/* Mod Tools */}
                     {isMod && (
                         <div className="p-4 border-t border-white/5 bg-white/5 backdrop-blur-sm">
                             <div className="flex items-center gap-2 mb-3 text-[10px] font-black text-white/40 uppercase tracking-widest">
@@ -482,20 +493,20 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                                 {match.status === 'live' && <Button size="sm" onClick={() => updateStatus('voting')} className="w-full bg-yellow-600 hover:bg-yellow-700 text-xs font-bold">STOP & VOTE</Button>}
                                 {(match.status === 'live' || match.status === 'voting') && (
                                     <>
-                                        <Button size="sm" variant="outline" onClick={() => declareWinner(match.player1_id)} className="w-full border-cyan-500/20 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 text-xs font-bold">P1 WINS</Button>
-                                        <Button size="sm" variant="outline" onClick={() => declareWinner(match.player2_id)} className="w-full border-purple-500/20 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 text-xs font-bold">P2 WINS</Button>
+                                        <Button size="sm" variant="outline" onClick={() => handleDeclareWinner(match.player1_id)} className="w-full border-cyan-500/20 bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 text-xs font-bold">P1 WINS</Button>
+                                        <Button size="sm" variant="outline" onClick={() => handleDeclareWinner(match.player2_id)} className="w-full border-purple-500/20 bg-purple-500/10 text-purple-400 hover:bg-purple-500/20 text-xs font-bold">P2 WINS</Button>
                                     </>
                                 )}
                             </div>
                         </div>
                     )}
 
-                    {/* Betting Panel */}
+                    {/* Betting Panel - UPDATED */}
                     <div className="p-4 border-t border-white/5 bg-[#080808]">
                         <div className="flex justify-between items-center mb-3">
                             <h3 className="text-[10px] font-black text-white/40 uppercase tracking-widest">Place Bet</h3>
-                            <div className="flex items-center gap-1 text-[10px] text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded font-mono font-bold">
-                                +$999
+                            <div className="flex items-center gap-1 text-[10px] text-zinc-400 bg-white/5 border border-white/5 px-2 py-0.5 rounded-full font-mono font-bold">
+                                Balance: <span className="text-yellow-500">${currentUser?.coins || 0}</span>
                             </div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 mb-3">
@@ -522,15 +533,15 @@ export function ArenaClient({ initialMatch, currentUser, initialBets }: ArenaCli
                             <div className="relative flex-1">
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 text-xs">$</span>
                                 <Input
-                                    placeholder="0"
-                                    className="bg-white/5 border-white/5 h-9 pl-6 text-sm"
+                                    placeholder="Amount"
+                                    className="bg-white/5 border-white/5 h-9 pl-6 text-sm text-white"
                                     type="number"
                                     value={betAmount}
                                     onChange={(e) => setBetAmount(e.target.value)}
                                 />
                             </div>
-                            <Button size="sm" onClick={placeBet} disabled={!betSide || !betAmount} className="bg-white text-black hover:bg-zinc-200 font-bold px-4">
-                                BET
+                            <Button size="sm" onClick={handlePlaceBet} disabled={!betSide || !betAmount || isPlacingBet} className="bg-white text-black hover:bg-zinc-200 font-bold px-4">
+                                {isPlacingBet ? "..." : "BET"}
                             </Button>
                         </div>
                     </div>

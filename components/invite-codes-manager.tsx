@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Loader2, Copy, RefreshCw, Ticket, Calendar as CalendarIcon, Trash, Edit, Eye } from "lucide-react";
+import { Loader2, Copy, RefreshCw, Ticket, Calendar as CalendarIcon, Trash, Edit, Eye, Link as LinkIcon } from "lucide-react";
 import toast from "react-hot-toast";
 import { formatDistanceToNow, format } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -142,6 +142,12 @@ export function InviteCodesManager() {
         toast.success("Copied to clipboard");
     };
 
+    const copyLink = (code: string) => {
+        const url = `${window.location.origin}/register?inviteCode=${code}`;
+        navigator.clipboard.writeText(url);
+        toast.success("Registration link copied");
+    };
+
     const totalUses = codes.reduce((acc, code) => acc + (code.uses || 0), 0);
 
     return (
@@ -179,8 +185,11 @@ export function InviteCodesManager() {
                                     <div className="col-span-3">
                                         <div className="flex items-center gap-2 mb-1">
                                             <code className="text-white font-bold font-mono tracking-wider">{invite.code}</code>
-                                            <button onClick={() => copyCode(invite.code)} className="text-white/20 hover:text-white transition-colors">
+                                            <button onClick={() => copyCode(invite.code)} className="text-white/20 hover:text-white transition-colors" title="Copy Code">
                                                 <Copy className="w-3 h-3" />
+                                            </button>
+                                            <button onClick={() => copyLink(invite.code)} className="text-white/20 hover:text-white transition-colors" title="Copy Registration Link">
+                                                <LinkIcon className="w-3 h-3" />
                                             </button>
                                         </div>
                                         <div className="text-[10px] text-white/30 font-bold uppercase tracking-wider">

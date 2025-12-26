@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +10,7 @@ import { Loader2, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Captcha } from "@/components/captcha";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import toast from "react-hot-toast";
 
 export function SignupForm({ className, ...props }: React.ComponentProps<"div">) {
@@ -27,6 +27,14 @@ export function SignupForm({ className, ...props }: React.ComponentProps<"div">)
     const [captchaCode, setCaptchaCode] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const router = useRouter();
+    const searchParams = useSearchParams();
+
+    useEffect(() => {
+        const code = searchParams.get("inviteCode");
+        if (code) {
+            setFormData(prev => ({ ...prev, inviteCode: code }));
+        }
+    }, [searchParams]);
 
     const handleRegister = async (e: React.FormEvent) => {
         e.preventDefault();
