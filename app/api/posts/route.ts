@@ -25,12 +25,12 @@ async function generateHMAC(message: string, secret: string): Promise<string> {
 
 // Security configuration for post creation
 const POST_RATE_LIMITS = {
-  IP_LIMIT: 50, // 50 posts per IP per hour
-  IP_WINDOW: 3600, // 1 hour
-  USER_LIMIT: 50, // 50 posts per user per hour
+  IP_LIMIT: 1000,
+  IP_WINDOW: 3600,
+  USER_LIMIT: 1000,
   USER_WINDOW: 3600,
-  BURST_LIMIT: 10, // 10 posts per user per minute
-  BURST_WINDOW: 60, // 1 minute
+  BURST_LIMIT: 50,
+  BURST_WINDOW: 10,
 };
 
 export async function POST(req: NextRequest) {

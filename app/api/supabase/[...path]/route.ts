@@ -43,7 +43,10 @@ async function handleProxy(req: NextRequest, params: { path: string[] }) {
     searchParams.delete('apikey');
     const search = searchParams.toString();
 
+    // Final upstream URL using PARAMS
     const url = `${supabaseUrl}${path}${search ? '?' + search : ''}`;
+
+    console.log(`[Proxy] Forwarding to: ${url}`);
 
     // 3. CLEAN & INJECT HEADERS
     const headers = new Headers();
