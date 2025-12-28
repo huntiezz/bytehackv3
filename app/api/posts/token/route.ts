@@ -5,12 +5,12 @@ import { getClientIp } from "@/lib/security";
 import { rateLimit } from "@/lib/rate-limit";
 
 const TOKEN_RATE_LIMITS = {
-  IP_LIMIT: 15,
+  IP_LIMIT: 50, // Was 15
   IP_WINDOW: 3600,
-  USER_LIMIT: 20,
+  USER_LIMIT: 50, // Was 20
   USER_WINDOW: 3600,
-  BURST_LIMIT: 5,
-  BURST_WINDOW: 300,
+  BURST_LIMIT: 10,
+  BURST_WINDOW: 60, // Was 300 (5 mins) -> 1 min
 };
 
 async function generateHMAC(message: string, secret: string): Promise<string> {
