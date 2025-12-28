@@ -43,60 +43,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "You must be signed in to post" }, { status: 401 });
     }
 
-    // LAYER 1: IP-based rate limiting (prevents VPN/proxy spam)
-    /*
-    const ipRateLimit = await rateLimit(
-      `post:ip:${clientIp}`,
-      POST_RATE_LIMITS.IP_LIMIT,
-      POST_RATE_LIMITS.IP_WINDOW
-    );
+    // LAYER 1-3: Rate limits removed at user request
 
-    if (!ipRateLimit.success) {
-      // ...
-    }
-    */
-
-    // LAYER 2: User-based rate limiting (prevents account spam)
-    /*
-    const userRateLimit = await rateLimit(
-      `post:user:${user.id}`,
-      POST_RATE_LIMITS.USER_LIMIT,
-      POST_RATE_LIMITS.USER_WINDOW
-    );
-
-    if (!userRateLimit.success) {
-      // ...
-    }
-    */
-
-    // LAYER 3: Burst protection (prevents rapid successive posts)
-    /*
-    const burstLimit = await rateLimit(
-      `post:burst:${user.id}`,
-      POST_RATE_LIMITS.BURST_LIMIT,
-      POST_RATE_LIMITS.BURST_WINDOW
-    );
-
-    if (!burstLimit.success) {
-      // ...
-    }
-    */
-
-    // LAYER 4: Cryptographic token validation (prevents automated scripts)
     const { title, content, category } = await req.json();
 
-    // SECURITY TOKEN CHECK DISABLED AT USER REQUEST
-    // if (!securityToken) { ... }
-
-    /* 
-    if (!securityToken) {
-      return NextResponse.json({ error: "Invalid request - missing security token" }, { status: 403 });
-    }
-    // ... rest of token validation ...
-    */
-
-    // Skip validating token signature, expiry, and reuse.
-    // Proceed directly to basic validation.
+    // LAYER 4: Security token check removed at user request
 
     const supabase = await createClient();
 

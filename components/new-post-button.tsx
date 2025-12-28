@@ -212,9 +212,6 @@ export function NewPostButton() {
         return;
       }
 
-      /* Security token generation removed at user request */
-      /* const tokenRes = await fetch("/api/posts/token", ... */
-
       const postRes = await fetch("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -223,7 +220,6 @@ export function NewPostButton() {
           content,
           category: finalCategory,
           tags: tags.split(',').map(t => t.trim()).filter(Boolean),
-          // securityToken removed
         }),
       });
 
