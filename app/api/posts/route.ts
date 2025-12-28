@@ -121,64 +121,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { title, content, category, securityToken } = await req.json();
-
     // LAYER 4: Cryptographic token validation (prevents automated scripts)
+    const { title, content, category } = await req.json();
+
+    // SECURITY TOKEN CHECK DISABLED AT USER REQUEST
+    // if (!securityToken) { ... }
+
+    /* 
     if (!securityToken) {
       return NextResponse.json({ error: "Invalid request - missing security token" }, { status: 403 });
     }
+    // ... rest of token validation ...
+    */
 
-    // Validate token format: timestamp:nonce:signature
-    const tokenParts = securityToken.split(':');
-    if (tokenParts.length !== 3) {
-      return NextResponse.json({ error: "Invalid security token format" }, { status: 403 });
-    }
+    // Skip validating token signature, expiry, and reuse.
+    // Proceed directly to basic validation.
 
-    const [tokenTimestamp, nonce, signature] = tokenParts;
-    const tokenTime = parseInt(tokenTimestamp, 10);
-    const tokenAge = Date.now() - tokenTime;
-
-    // Token must be less than 10 minutes old
-    if (tokenAge > 600000 || tokenAge < 0) {
-      return NextResponse.json({ error: "Security token expired or invalid" }, { status: 403 });
-    }
-
-    // Verify the signature using Web Crypto API
     const supabase = await createClient();
-    const expectedPayload = `${user.id}:${clientIp}:${tokenTimestamp}:${nonce}`;
-    const secret = process.env.POST_TOKEN_SECRET || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "fallback-secret";
-    const expectedSignature = await generateHMAC(expectedPayload, secret);
-
-    if (signature !== expectedSignature) {
-      return NextResponse.json({ error: "Invalid security token signature" }, { status: 403 });
-    }
-
-    // Check if token has already been used (prevents replay attacks)
-    const { data: existingToken, error: tokenError } = await supabase
-      .from("post_tokens")
-      .select("*")
-      .eq("nonce", nonce)
-      .eq("user_id", user.id)
-      .single();
-
-    if (tokenError || !existingToken) {
-      return NextResponse.json({ error: "Invalid or expired token" }, { status: 403 });
-    }
-
-    if (existingToken.used) {
-      return NextResponse.json({ error: "Token already used - please generate a new one" }, { status: 403 });
-    }
-
-    // Check if token has expired
-    if (new Date(existingToken.expires_at).getTime() < Date.now()) {
-      return NextResponse.json({ error: "Token has expired" }, { status: 403 });
-    }
-
-    // Mark token as used (one-time use only)
-    await supabase
-      .from("post_tokens")
-      .update({ used: true, used_at: new Date().toISOString() })
-      .eq("nonce", nonce);
 
     // Basic validation
     if (!title || !content || !category) {
