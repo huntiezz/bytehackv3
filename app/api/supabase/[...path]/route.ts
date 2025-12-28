@@ -81,8 +81,17 @@ async function handleProxy(req: NextRequest) {
     }
 
     // 2. CONSTRUCT UPSTREAM URL
-    // Get everything after /api/supabase
-    const path = req.nextUrl.pathname.split('/api/supabase')[1] || '/';
+    // Accurately strip the /api/supabase prefix to get the real Supabase path
+    // e.g. /api/supabase/rest/v1/code_matches -> /rest/v1/code_matches
+    let path = req.nextUrl.pathname;
+    if (path.startsWith('/api/supabase')) {
+        path = path.substring('/api/supabase'.length);
+    }
+
+    // Ensure path starts with / if it's empty or missing
+    if (!path.startsWith('/')) {
+        path = '/' + path;
+    }
 
     // Reconstruct query parameters, stripping 'apikey' to avoid conflicts with headers
     const searchParams = new URLSearchParams(req.nextUrl.search);
