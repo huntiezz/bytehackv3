@@ -256,7 +256,7 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
 
         <div className="group relative w-full h-[280px] rounded-3xl overflow-hidden bg-zinc-900 border border-zinc-800">
           {bannerPreview ? (
-            <Image src={bannerPreview} alt="Banner" fill className="object-cover transition-opacity group-hover:opacity-50" />
+            <Image src={bannerPreview} alt="Banner" fill unoptimized className="object-cover transition-opacity group-hover:opacity-50" />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-black" />
           )}
@@ -267,7 +267,7 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
 
           <input
             type="file"
-            accept="image/*"
+            accept="image/png,image/jpeg,image/gif,image/webp"
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             onChange={(e) => handleFileChange(e, 'banner')}
           />
@@ -276,7 +276,7 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
         <div className="absolute -bottom-16 left-10">
           <div className="group relative w-[136px] h-[136px] rounded-full ring-[6px] ring-black bg-zinc-800 overflow-hidden">
             {previewUrl ? (
-              <Image src={previewUrl} alt="Avatar" fill className="object-cover transition-opacity group-hover:opacity-50" />
+              <Image src={previewUrl} alt="Avatar" fill unoptimized className="object-cover transition-opacity group-hover:opacity-50" />
             ) : (
               <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white/20">
                 {(displayName || username)?.[0]?.toUpperCase()}
@@ -289,7 +289,7 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
 
             <input
               type="file"
-              accept="image/*"
+              accept="image/png,image/jpeg,image/gif,image/webp"
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20"
               onChange={(e) => handleFileChange(e, 'avatar')}
             />
