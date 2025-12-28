@@ -135,7 +135,7 @@ export async function PATCH(req: Request) {
     if (display_name !== undefined) {
       const trimmedDisplayName = display_name.trim();
 
-      if (!VALIDATION_RULES.DISPLAY_NAME.PATTERN.test(trimmedDisplayName)) {
+      if (trimmedDisplayName.length > 0 && !VALIDATION_RULES.DISPLAY_NAME.PATTERN.test(trimmedDisplayName)) {
         return NextResponse.json({
           error: "Display name can only contain letters, numbers, dots (.), underscores (_), hyphens (-), and spaces."
         }, { status: 400 });

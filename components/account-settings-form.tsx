@@ -182,6 +182,11 @@ export function AccountSettingsForm({ user }: AccountSettingsFormProps) {
       return;
     }
 
+    if (displayName.trim().length > 0 && !VALIDATION_RULES.DISPLAY_NAME.PATTERN.test(displayName.trim())) {
+      toast.error('Display name can only contain letters, numbers, dots (.), underscores (_), hyphens (-), and spaces');
+      return;
+    }
+
     if (displayName.trim().length > VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH) {
       toast.error(`Display name cannot exceed ${VALIDATION_RULES.DISPLAY_NAME.MAX_LENGTH} characters`);
       return;
