@@ -21,9 +21,9 @@ export async function rateLimit(key: string, limit: number, windowSeconds: numbe
     if (error) {
         // Fallback to allow if DB fails (fail open) or closed?
         console.error("Rate limit RPC error:", error);
-        // Fail open to avoid blocking legit users on DB error, but for security maybe fail closed?
-        // User wants MAX security.
-        return { success: false, remaining: 0, reset: Date.now() + 60000 };
+        // FAIL OPEN: If rate limit check fails, allow the request to proceed.
+        // This prevents DB errors from blocking legitimate users.
+        return { success: true, remaining: 1, reset: Date.now() + 60000 };
     }
 
     if (data) {

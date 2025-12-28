@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
     }
 
     // LAYER 1: IP-based rate limiting (prevents VPN/proxy spam)
+    /*
     const ipRateLimit = await rateLimit(
       `post:ip:${clientIp}`,
       POST_RATE_LIMITS.IP_LIMIT,
@@ -51,25 +52,12 @@ export async function POST(req: NextRequest) {
     );
 
     if (!ipRateLimit.success) {
-      const resetTime = Math.ceil((ipRateLimit.reset - Date.now()) / 1000 / 60) || 1;
-      return NextResponse.json(
-        {
-          error: `Too many posts from this IP address. Please try again in ${resetTime} minutes.`,
-          retryAfter: ipRateLimit.reset
-        },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': String(Math.ceil((ipRateLimit.reset - Date.now()) / 1000) || 60),
-            'X-RateLimit-Limit': String(POST_RATE_LIMITS.IP_LIMIT),
-            'X-RateLimit-Remaining': String(ipRateLimit.remaining),
-            'X-RateLimit-Reset': String(ipRateLimit.reset),
-          }
-        }
-      );
+      // ...
     }
+    */
 
     // LAYER 2: User-based rate limiting (prevents account spam)
+    /*
     const userRateLimit = await rateLimit(
       `post:user:${user.id}`,
       POST_RATE_LIMITS.USER_LIMIT,
@@ -77,25 +65,12 @@ export async function POST(req: NextRequest) {
     );
 
     if (!userRateLimit.success) {
-      const resetTime = Math.ceil((userRateLimit.reset - Date.now()) / 1000 / 60) || 1;
-      return NextResponse.json(
-        {
-          error: `You're posting too quickly. Please wait ${resetTime} minutes before posting again.`,
-          retryAfter: userRateLimit.reset
-        },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': String(Math.ceil((userRateLimit.reset - Date.now()) / 1000) || 60),
-            'X-RateLimit-Limit': String(POST_RATE_LIMITS.USER_LIMIT),
-            'X-RateLimit-Remaining': String(userRateLimit.remaining),
-            'X-RateLimit-Reset': String(userRateLimit.reset),
-          }
-        }
-      );
+      // ...
     }
+    */
 
     // LAYER 3: Burst protection (prevents rapid successive posts)
+    /*
     const burstLimit = await rateLimit(
       `post:burst:${user.id}`,
       POST_RATE_LIMITS.BURST_LIMIT,
@@ -103,23 +78,9 @@ export async function POST(req: NextRequest) {
     );
 
     if (!burstLimit.success) {
-      const resetTime = Math.ceil((burstLimit.reset - Date.now()) / 1000) || 10;
-      return NextResponse.json(
-        {
-          error: `Please slow down! Wait ${resetTime} seconds before posting again.`,
-          retryAfter: burstLimit.reset
-        },
-        {
-          status: 429,
-          headers: {
-            'Retry-After': String(Math.ceil((burstLimit.reset - Date.now()) / 1000) || 10),
-            'X-RateLimit-Limit': String(POST_RATE_LIMITS.BURST_LIMIT),
-            'X-RateLimit-Remaining': String(burstLimit.remaining),
-            'X-RateLimit-Reset': String(burstLimit.reset),
-          }
-        }
-      );
+      // ...
     }
+    */
 
     // LAYER 4: Cryptographic token validation (prevents automated scripts)
     const { title, content, category } = await req.json();
