@@ -27,13 +27,21 @@ export async function rateLimit(key: string, limit: number, windowSeconds: numbe
     }
 
     if (data) {
+        let resetMs = Date.now() + 60000;
+        if (data.reset_time) {
+            const parsed = new Date(data.reset_time).getTime();
+            if (!isNaN(parsed)) {
+                resetMs = parsed;
+            }
+        }
+
         return {
             success: data.success,
             remaining: data.remaining,
-            reset: new Date(data.reset_time).getTime()
+            reset: resetMs
         };
     }
 
-    return { success: false, remaining: 0, reset: Date.now() };
+    return { success: false, remaining: 0, reset: Date.now() + 60000 };
 }
 

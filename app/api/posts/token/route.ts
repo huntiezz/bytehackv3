@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
     );
 
     if (!ipRateLimit.success) {
-      const resetTime = Math.ceil((ipRateLimit.reset - Date.now()) / 1000 / 60);
+      const resetTime = Math.max(1, Math.ceil((ipRateLimit.reset - Date.now()) / 1000 / 60));
       return NextResponse.json(
         {
           error: `Too many token requests from this IP. Please try again in ${resetTime} minutes.`,
