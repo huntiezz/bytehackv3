@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Mail, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 interface EmailVerificationModalProps {
     userEmail?: string | null;
@@ -15,6 +15,7 @@ interface EmailVerificationModalProps {
 }
 
 export function EmailVerificationModal({ userEmail, isVerified }: EmailVerificationModalProps) {
+    const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [step, setStep] = useState(1);
     const [email, setEmail] = useState(userEmail || "");
@@ -24,12 +25,14 @@ export function EmailVerificationModal({ userEmail, isVerified }: EmailVerificat
     const pathname = usePathname();
 
     useEffect(() => {
+        if (step === 3) return;
+
         if (!isVerified && pathname?.startsWith("/forum") && pathname !== "/") {
             setIsOpen(true);
         } else {
             setIsOpen(false);
         }
-    }, [isVerified, pathname]);
+    }, [isVerified, pathname, step]);
 
     useEffect(() => {
         if (cooldown > 0) {
@@ -103,6 +106,7 @@ export function EmailVerificationModal({ userEmail, isVerified }: EmailVerificat
             if (res.ok) {
                 toast.success("Email verified!");
                 setStep(3);
+                router.refresh();
                 setTimeout(() => setIsOpen(false), 2000);
             } else {
                 toast.error(data.error || "Invalid code");
