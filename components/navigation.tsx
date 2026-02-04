@@ -3,15 +3,13 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, ShoppingBag, Settings, Code2, LogOut, Download, Shield, ChevronDown, Folder, BookOpen, Info, ArrowUpRight, Swords } from "lucide-react";
-import Image from "next/image";
 import { MobileNav } from "@/components/mobile-nav";
-import { useState, useEffect, useRef } from "react";
 import { UserNavDropdown } from "@/components/user-nav-dropdown";
 import { NotificationsPopover } from "@/components/notifications-popover";
 import { usePathname } from "next/navigation";
 import { SearchBar } from "@/components/search-bar";
-import { SnowToggle } from "@/components/snow-toggle";
+import { cn } from "@/lib/utils";
+import { Folder, Swords, Info, ShoppingBag } from "lucide-react";
 
 interface NavigationProps {
   user?: any;
@@ -19,195 +17,80 @@ interface NavigationProps {
   isOffsetUpdater?: boolean;
 }
 
-const tutorials = [
-  { name: "All Tutorials", href: "/forum/tutorials" },
-  { name: "Beginner Guides", href: "/forum/tutorials/beginner" },
-  { name: "Advanced Techniques", href: "/forum/tutorials/advanced" },
-  { name: "Video Tutorials", href: "/forum/tutorials/video" },
-];
-
-const guides = [
-  { name: "All Guides", href: "/forum/guides" },
-  { name: "Setup Guides", href: "/forum/guides/setup" },
-  { name: "Workflow & Automation", href: "/forum/guides/workflow" },
-  { name: "Optimization", href: "/forum/guides/optimization" },
-  { name: "Game Forums", href: "/forum/games" },
-  { name: "Tool Forums", href: "/forum/tools" },
-];
-
-const antiCheatInfo = [
-  { name: "All Anti-cheat", href: "/forum/anti-cheat" },
-  { name: "Bypasses", href: "/forum/anti-cheat/bypasses" },
-  { name: "AC Analysis", href: "/forum/anti-cheat/analysis" },
-  { name: "Discussion", href: "/forum/anti-cheat/discussion" },
-];
-
-const infoLinks = [
-  { name: "About Us", href: "/about" },
-  { name: "Rules", href: "/rules" },
-  { name: "FAQ", href: "/faq" },
-];
-
-function NavItem({ href, children, icon: Icon, isActive }: { href: string; children: React.ReactNode; icon: any; isActive?: boolean }) {
-  return (
-    <Link
-      href={href}
-      className={`
-                group flex items-center gap-2 text-sm font-medium transition-colors relative h-16 px-1
-                ${isActive ? 'text-white' : 'text-zinc-400 hover:text-white'}
-            `}
-    >
-      <Icon className="h-4 w-4" />
-      {children}
-      {isActive && (
-        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white rounded-t-full" />
-      )}
-    </Link>
-  );
-}
-
-function NavDropdown({
-  label,
-  icon: Icon,
-  items,
-  isActive
-}: {
-  label: string;
-  icon: any;
-  items: { name: string; href: string }[]
-  isActive?: boolean;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const handleMouseEnter = () => {
-    if (timeoutRef.current !== null) clearTimeout(timeoutRef.current);
-    setIsOpen(true);
-  };
-
-  const handleMouseLeave = () => {
-    timeoutRef.current = setTimeout(() => {
-      setIsOpen(false);
-    }, 150);
-  };
-
-  return (
-    <div
-      className="relative h-16 flex items-center"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <button
-        className={`
-            group flex items-center gap-2 text-sm font-medium transition-colors px-1 h-full relative
-            ${isActive || isOpen ? 'text-white' : 'text-zinc-400 hover:text-white'}
-          `}
-      >
-        <Icon className="h-4 w-4" />
-        {label}
-        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 text-zinc-500 group-hover:text-white ${isOpen ? 'rotate-180' : ''}`} />
-
-        {isActive && (
-          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white rounded-t-full" />
-        )}
-      </button>
-
-      {isOpen && (
-        <div className="absolute top-[calc(100%-10px)] left-0 w-64 pt-4">
-          <div className="bg-[#050505] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 p-2">
-            {items.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center justify-between px-4 py-3 text-sm text-zinc-400 hover:text-white hover:bg-white/5 rounded-xl transition-colors group/item"
-              >
-                <span>{item.name}</span>
-                <ArrowUpRight className="w-3.5 h-3.5 text-zinc-600 group-hover/item:text-white transition-colors" />
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export function Navigation({ user, isAdmin = false, isOffsetUpdater = false }: NavigationProps) {
   const pathname = usePathname();
 
+  const navLinks = [
+    { name: "Forums", href: "/forum", icon: Folder },
+    { name: "Offsets", href: "/offsets", icon: Folder },
+    { name: "Code Off", href: "/code-off", icon: Swords },
+    { name: "Products", href: "/products", icon: ShoppingBag },
+    { name: "About", href: "/about", icon: Info },
+  ];
+
   return (
-    <nav className="sticky top-0 z-50 bg-black border-b border-white/5 h-16">
-      <div className="max-w-[1400px] mx-auto px-6 h-full">
-        <div className="flex items-center justify-between h-full">
-          {/* Left Side: Nav Links */}
-          <div className="hidden md:flex items-center gap-5 h-full">
-            <NavItem href="/forum" icon={Folder} isActive={pathname?.startsWith('/forum')}>
-              Forums
-            </NavItem>
+    <nav className="sticky top-0 z-50 w-full border-b border-white/5 bg-black/80 backdrop-blur-xl supports-[backdrop-filter]:bg-black/60">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
 
-            <NavDropdown
-              label="Tutorials"
-              icon={Folder}
-              items={tutorials}
-              isActive={pathname?.startsWith('/tutorials')}
-            />
+        {/* Left: Logo & Main Nav */}
+        <div className="flex items-center gap-8">
 
-            <NavDropdown
-              label="Guides"
-              icon={Folder}
-              items={guides}
-              isActive={pathname?.startsWith('/guides')}
-            />
 
-            <NavDropdown
-              label="Anti-cheat"
-              icon={Folder}
-              items={antiCheatInfo}
-              isActive={pathname?.startsWith('/anti-cheat')}
-            />
-
-            <NavItem href="/offsets" icon={Folder} isActive={pathname?.startsWith('/offsets')}>
-              Offsets
-            </NavItem>
-
-            <NavItem href="/code-off" icon={Swords} isActive={pathname?.startsWith('/code-off')}>
-              Code Off
-            </NavItem>
-
-            <NavDropdown
-              label="Info"
-              icon={Folder}
-              items={infoLinks}
-              isActive={pathname?.startsWith('/about') || pathname?.startsWith('/rules') || pathname?.startsWith('/contact')}
-            />
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => {
+              const isActive = pathname?.startsWith(link.href);
+              const Icon = link.icon;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={cn(
+                    "group flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all duration-200 rounded-full",
+                    isActive
+                      ? "text-white bg-white/10"
+                      : "text-zinc-400 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <Icon className="w-4 h-4" />
+                  {link.name}
+                </Link>
+              );
+            })}
           </div>
+        </div>
 
-          {/* Right Side: User & Mobile */}
-          <div className="flex items-center gap-4">
-            <SnowToggle />
+        {/* Right: Actions */}
+        <div className="flex items-center gap-4">
 
-            {/* Mobile Toggle */}
-            <div className="md:hidden">
-              <MobileNav user={user} isAdmin={isAdmin} isOffsetUpdater={isOffsetUpdater} />
+          {user ? (
+            <div className="hidden md:flex items-center gap-4">
+              {pathname?.startsWith('/forum') && (
+                <div className="w-64">
+                  <SearchBar />
+                </div>
+              )}
+              <NotificationsPopover currentUserId={user.id} />
+              <UserNavDropdown user={user} />
             </div>
-
-            {user ? (
-              <div className="flex items-center gap-5">
-                {pathname?.startsWith('/forum') && (
-                  <div className="mr-2">
-                    <SearchBar />
-                  </div>
-                )}
-                <NotificationsPopover currentUserId={user.id} />
-                <UserNavDropdown user={user} />
-              </div>
-            ) : (
+          ) : (
+            <div className="hidden md:flex items-center gap-4">
               <Link href="/login">
-                <Button variant="default" className="bg-white text-black hover:bg-white/90 font-medium rounded-full px-6">
+                <Button variant="ghost" className="text-zinc-400 hover:text-white">
                   Sign In
                 </Button>
               </Link>
-            )}
+              <Link href="/register">
+                <Button className="bg-white text-black hover:bg-zinc-200 rounded-full font-bold">
+                  Get Started
+                </Button>
+              </Link>
+            </div>
+          )}
+
+          {/* Mobile Toggle */}
+          <div className="md:hidden">
+            <MobileNav user={user} isAdmin={isAdmin} isOffsetUpdater={isOffsetUpdater} />
           </div>
         </div>
       </div>

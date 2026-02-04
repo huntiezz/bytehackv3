@@ -122,7 +122,6 @@ export default async function ForumPage({
         return cat === 'coding-discussion' ||
           cat === 'coding discussion' ||
           cat.startsWith('game:') ||
-          cat.startsWith('tutorials:') ||
           cat.startsWith('tool:');
       },
       posts: [] as any[]
@@ -180,14 +179,14 @@ export default async function ForumPage({
             </div>
 
             <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tighter leading-[1] mb-4">
-              <span className="block mb-0.5">ByteForum Recode –</span>
+              <span className="block mb-0.5">ByteHack Recode –</span>
               <span className="block mb-0.5">faster response,</span>
               <span className="block mb-0.5">realtime presence,</span>
               <span className="text-white/20 block">zero compromises.</span>
             </h1>
 
             <p className="text-sm text-zinc-400 leading-relaxed mb-6 max-w-md font-medium">
-              Welcome to the new ByteForum front-end. We're rebuilding every surface with performance in mind while keeping the monochrome neon aesthetic the community loves.
+              Welcome to the new ByteHack front-end. We're rebuilding every surface with performance in mind while keeping the monochrome neon aesthetic the community loves.
             </p>
 
             <div className="flex items-center gap-3">

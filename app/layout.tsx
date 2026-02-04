@@ -12,7 +12,6 @@ import { ToastProvider } from "@/components/toast-provider";
 import { PresenceUpdater } from "@/components/presence-updater";
 import { PasswordRecoveryListener } from "@/components/auth/password-recovery-listener";
 import { Analytics } from "@vercel/analytics/next";
-import { Snowfall } from "@/components/snowfall";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,8 +26,8 @@ const proggyClean = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "ByteForum - Community Hub",
-    template: "%s | ByteForum",
+    default: "ByteHack - Community Hub",
+    template: "%s | ByteHack",
   },
   description: "A modern game hacking community forum reboot.",
   keywords: ["gaming", "offsets", "community", "marketplace", "CS2", "Fortnite", "game hacking"],
@@ -37,8 +36,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-    siteName: "ByteForum",
-    title: "ByteForum - Community Hub",
+    siteName: "ByteHack",
+    title: "ByteHack - Community Hub",
     description: "A modern game hacking community forum reboot.",
     images: [
       {
@@ -51,7 +50,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ByteForum - Community Hub",
+    title: "ByteHack - Community Hub",
     description: "A modern game hacking community forum reboot.",
     images: ["/logo.png"],
   },
@@ -77,7 +76,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${proggyClean.variable} font-sans antialiased`}>
-        <Snowfall />
         <ToastProvider />
         <ConditionalLayoutWrapper />
         <PresenceUpdater />

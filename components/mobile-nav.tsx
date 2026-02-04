@@ -29,73 +29,7 @@ interface MobileNavProps {
   isOffsetUpdater?: boolean;
 }
 
-const tutorials = [
-  { name: "Getting Started", href: "/tutorials/getting-started" },
-  { name: "Reverse Engineering", href: "/tutorials/reverse-engineering" },
-  { name: "Memory Editing", href: "/tutorials/memory-editing" },
-  { name: "Pattern Scanning", href: "/tutorials/pattern-scanning" },
-];
 
-const guides = [
-  { name: "Setup Guide", href: "/guides/setup" },
-  { name: "Best Practices", href: "/guides/best-practices" },
-  { name: "Security", href: "/guides/security" },
-  { name: "FAQ", href: "/guides/faq" },
-];
-
-const antiCheatInfo = [
-  { name: "EAC", href: "/anti-cheat/eac" },
-  { name: "BattlEye", href: "/anti-cheat/battleye" },
-  { name: "Vanguard", href: "/anti-cheat/vanguard" },
-  { name: "VAC", href: "/anti-cheat/vac" },
-];
-
-const infoLinks = [
-  { name: "About", href: "/about" },
-  { name: "Rules", href: "/rules" },
-  { name: "Contact", href: "/contact" },
-];
-
-function CollapsibleSection({
-  title,
-  icon: Icon,
-  items,
-  onItemClick
-}: {
-  title: string;
-  icon: any;
-  items: { name: string; href: string }[];
-  onItemClick: () => void;
-}) {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div>
-      <Button
-        variant="ghost"
-        className="w-full justify-between gap-3 h-12"
-        onClick={() => setIsOpen(!isOpen)}
-      >
-        <div className="flex items-center gap-3">
-          <Icon className="h-5 w-5" />
-          {title}
-        </div>
-        <ChevronDown className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </Button>
-      {isOpen && (
-        <div className="pl-8 space-y-1 mb-2">
-          {items.map((item) => (
-            <Link key={item.href} href={item.href} onClick={onItemClick}>
-              <Button variant="ghost" className="w-full justify-start h-10 text-sm text-muted-foreground hover:text-foreground">
-                {item.name}
-              </Button>
-            </Link>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 export function MobileNav({ user, isAdmin = false, isOffsetUpdater = false }: MobileNavProps) {
   const [open, setOpen] = useState(false);
@@ -155,33 +89,26 @@ export function MobileNav({ user, isAdmin = false, isOffsetUpdater = false }: Mo
               </Button>
             </Link>
 
-            <CollapsibleSection
-              title="Tutorials"
-              icon={BookOpen}
-              items={tutorials}
-              onItemClick={() => setOpen(false)}
-            />
+            <Link href="/offsets" onClick={() => setOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start gap-3 h-12">
+                <Folder className="h-5 w-5" />
+                Offsets
+              </Button>
+            </Link>
 
-            <CollapsibleSection
-              title="Guides"
-              icon={Code2}
-              items={guides}
-              onItemClick={() => setOpen(false)}
-            />
+            <Link href="/code-off" onClick={() => setOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start gap-3 h-12">
+                <Code2 className="h-5 w-5" />
+                Code Off
+              </Button>
+            </Link>
 
-            <CollapsibleSection
-              title="Anti-cheat"
-              icon={Shield}
-              items={antiCheatInfo}
-              onItemClick={() => setOpen(false)}
-            />
-
-            <CollapsibleSection
-              title="Info"
-              icon={Info}
-              items={infoLinks}
-              onItemClick={() => setOpen(false)}
-            />
+            <Link href="/about" onClick={() => setOpen(false)}>
+              <Button variant="ghost" className="w-full justify-start gap-3 h-12">
+                <Info className="h-5 w-5" />
+                About
+              </Button>
+            </Link>
 
             <Link href="/products" onClick={() => setOpen(false)}>
               <Button variant="ghost" className="w-full justify-start gap-3 h-12">
